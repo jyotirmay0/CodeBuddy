@@ -14,7 +14,7 @@ const UserSchema=new mongoose.Schema({
     },
     name:{
         type:String,
-        required:true
+        default:""
     },
     email:{
         type:String,
@@ -23,12 +23,15 @@ const UserSchema=new mongoose.Schema({
     },
     contact:{
         type:Number,
-        required:true,
-        unique:true
+        default:null,
     },
     password:{
         type:String,
         required:true
+    },
+    verified:{
+        type:Boolean,
+        default:false
     },
     skills:{
         type:[String],
