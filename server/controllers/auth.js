@@ -5,6 +5,8 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/AsyncHandler.js"
 import { saveOTP,deleteOTP,getOTP } from '../utils/otpRedis.js';
 import { sendMail } from '../utils/SendMail.js';
+import cloudinary from "../utils/Cloudinary.js"
+import fs from 'fs';
 
 const generateAccessAndRefreshToken=async(id)=>{
   try {
@@ -188,5 +190,43 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
   return res.status(200).json(
     new ApiResponse(200, { accessToken, refreshToken }, "OTP verified and user verified successfully")
+  );
+});
+
+export const updateUserDetails = asyncHandler(async (req, res) => {
+  const { skills, interests, hobbies } = req.body;
+
+  const user = await User.findById(req.user._id);
+  if (!user) throw new ApiError(404, "User not found");
+
+  if (skills) user.skills = skills;
+  if (interests) user.interests = interests;
+  if (hobbies) user.hobbies = hobbies;
+
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, { skills: user.skills, interests: user.interests, hobbies: user.hobbies }, "User details updated successfully")
+  );
+});
+
+export const uploadProfilePic = asyncHandler(async (req, res) => {
+  if (!req.file)throw new ApiError(400, "Image file is required");
+  const localPath = req.file.path; // error fix
+
+  const result = await cloudinary.uploader.upload(localPath, {
+    folder: 'profile_pics',
+    crop: 'limit'
+  });
+  fs.unlinkSync(localPath);
+
+  const user = await User.findById(req.user._id);
+  if (!user) throw new ApiError(404, "User not found");
+
+  user.pic = result.secure_url;
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, { pic: user.pic }, "Profile picture uploaded successfully")
   );
 });

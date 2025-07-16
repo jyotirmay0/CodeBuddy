@@ -33,6 +33,10 @@ const UserSchema=new mongoose.Schema({
         type:Boolean,
         default:false
     },
+    pic:{
+        type: String,
+        default: ""
+    },
     skills:{
         type:[String],
         default:[]
