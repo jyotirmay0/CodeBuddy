@@ -23,7 +23,7 @@ const UserSchema=new mongoose.Schema({
     },
     contact:{
         type:Number,
-        default:null,
+        default:0,
     },
     password:{
         type:String,

@@ -230,3 +230,16 @@ export const uploadProfilePic = asyncHandler(async (req, res) => {
     new ApiResponse(200, { pic: user.pic }, "Profile picture uploaded successfully")
   );
 });
+
+export const updateContact = asyncHandler(async (req, res) => {
+  const { contact } = req.body;
+  const user = await User.findById(req.user._id);
+  if (!user) throw new ApiError(404, "User not found");
+
+  user.contact = contact;
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, { pic: user.pic }, "Contact updated successfully")
+  );
+});
