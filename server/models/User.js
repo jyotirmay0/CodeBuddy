@@ -12,42 +12,65 @@ const UserSchema=new mongoose.Schema({
         min:6,
         max:30
     },
+    name:{
+        type:String,
+        default:""
+    },
     email:{
         type:String,
         required:true,
         unique:true,
     },
+    contact:{
+        type:Number,
+        default:0,
+    },
     password:{
         type:String,
         required:true
     },
-    pin:{
-        type:String,
-        required:true,
+    verified:{
+        type:Boolean,
+        default:false
     },
-    savedPasswords:[
-        {
-            name:String,
-            password:String,
-            created:{type:Date,default:Date.now},
-            favourite:{type:Boolean,default:false}
-        }
-    ],
+    pic:{
+        type: String,
+        default: ""
+    },
+    skills:{
+        type:[String],
+        default:[]
+    },
+    interests:{
+        type:[String],
+        default:[]
+    },
+    hobbies:{
+        type:[String],
+        default:[]
+    },
+    friends:{
+        type:[String],
+        default:[]
+    },
+    projects:{
+        type:[String],
+        default:[]
+    },
+    groups:{
+        type:[String],
+        default:[]
+    }
 },{timestamps:true})
 
 UserSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next();
     this.password=await bcrypt.hash(this.password, 10)
-    this.pin=await bcrypt.hash(this.pin,10)
     next()
 })
 
 UserSchema.methods.isPasswordCorrect=async function(password){
     return await bcrypt.compare(password, this.password)
-}
-
-UserSchema.methods.isPinCorrect=async function(pin){
-    return await bcrypt.compare(pin, this.pin)
 }
 
 UserSchema.methods.generateAccessToken = function () {
