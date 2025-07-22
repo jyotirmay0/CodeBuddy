@@ -76,6 +76,9 @@ export const login=asyncHandler(async(req,res)=>{
 
   const {accessToken, refreshToken}=await generateAccessAndRefreshToken(user._id)
 
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
   return res.status(200)
   .json(new ApiResponse(200,{accessToken, refreshToken},"user logged in succesfully"))
 })
@@ -85,7 +88,7 @@ export const logout=asyncHandler(async(req, res)=>{
     req.user._id,
     {
       $set:{
-        refreshToken: undefined
+        refreshToken: ""
       }
     },
     {
@@ -139,7 +142,7 @@ export const refreshAccessToken=asyncHandler(async(req, res)=>{
     )
   
     const user=await User.findById(decodedToken?._id)
-    if(!user){
+    if(!user || user.refreshToken !== incomingRefreshToken){
       throw new ApiError(401, "Invalid refresh token")
     }
     const {accessToken}=await generateAccessToken(user._id)
