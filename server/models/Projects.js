@@ -15,12 +15,23 @@ const ProjectSchema=new mongoose.Schema({
         type:String,
         default:""
     },
+    requirements:{
+        type:String,
+        default:""
+    },
     skills:{
         type:[String],
         default:[]
     },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    messages: [MessageSchema]
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    messages: [MessageSchema],
+    requests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    status:{
+        type:String,
+        default:"open",
+        enum:["open","closed"]
+    }
 },{timestamps:true})
 
 ProjectSchema.index({ name: 1 });

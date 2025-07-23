@@ -47,6 +47,44 @@ export const friendList = asyncHandler(async (req, res) => {
 });
 
 
-export const friendSuggestions=asyncHandler(async(req,res)=>{
-    
-})
+export const friendSuggestions = asyncHandler(async (req, res) => {
+  const currentUser = await User.findById(req.user._id);
+  if (!currentUser) throw new ApiError(404, "User not found");
+
+  const excludeIds = [
+    req.user._id.toString(),
+    ...currentUser.friends.map(id => id.toString()),
+  ];
+
+  const candidateUsers = await User.find({
+    _id: { $nin: excludeIds },
+    $or: [
+      { skills: { $in: currentUser.skills } },
+      { interests: { $in: currentUser.interests } },
+      { hobbies: { $in: currentUser.hobbies } }
+    ]
+  }, "_id username skills interests hobbies");
+
+  const scoredUsers = candidateUsers.map(user => {
+    const skillMatches = user.skills.filter(skill => currentUser.skills.includes(skill)).length;
+    const interestMatches = user.interests.filter(interest => currentUser.interests.includes(interest)).length;
+    const hobbyMatches = user.hobbies.filter(hobby => currentUser.hobbies.includes(hobby)).length;
+
+    const score = (3 * skillMatches) + (2 * interestMatches) + (1 * hobbyMatches);
+
+    return {
+      _id: user._id,
+      username: user.username,
+      score,
+    };
+  });
+
+  const suggestions = scoredUsers
+    .filter(u => u.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+
+  return res.status(200).json(
+    new ApiResponse(200, { suggestions }, "Friend suggestions fetched successfully")
+  );
+});

@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import {router as authRoutes} from "./routes/auth.js";
+import { router as userRouter } from "./routes/user.js";
+import { router as projectRouter } from "./routes/project.js";
 
 const app=express()
 
@@ -15,6 +17,8 @@ app.use(express.json({limit:"1mb"}))
 app.use(express.urlencoded({extended:true, limit:"1mb"}))
 
 app.use("/auth",authRoutes)
+app.use("/user", userRouter);
+app.use("/project", projectRouter);
 
 app.use((err, res) => {
   const statusCode = err.statusCode || 500;
