@@ -191,6 +191,9 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
   return res.status(200).json(
     new ApiResponse(200, { accessToken, refreshToken }, "OTP verified and user verified successfully")
   );
@@ -209,13 +212,13 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   return res.status(200).json(
-    new ApiResponse(200, { skills: user.skills, interests: user.interests, hobbies: user.hobbies }, "User details updated successfully")
+    new ApiResponse(200, null, "User details updated successfully")
   );
 });
 
 export const uploadProfilePic = asyncHandler(async (req, res) => {
   if (!req.file)throw new ApiError(400, "Image file is required");
-  const localPath = req.file.path; // error fix
+  const localPath = req.file.path;
 
   const result = await cloudinary.uploader.upload(localPath, {
     folder: 'profile_pics',
@@ -243,6 +246,6 @@ export const updateContact = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   return res.status(200).json(
-    new ApiResponse(200, { pic: user.pic }, "Contact updated successfully")
+    new ApiResponse(200,null, "Contact updated successfully")
   );
 });

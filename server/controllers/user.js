@@ -88,3 +88,12 @@ export const friendSuggestions = asyncHandler(async (req, res) => {
     new ApiResponse(200, { suggestions }, "Friend suggestions fetched successfully")
   );
 });
+
+export const userDetails=asyncHandler(async(req,res)=>{
+  const {id}=req.body
+  const user=await User.findById(id).select("-password -verified -_id -createdAt -updatedAt")
+  if(!user)throw new ApiError(401,"User not found");
+  return res.status(200).json(
+    new ApiResponse(200,{user},"User fetched successfully")
+  )
+})
