@@ -1,7 +1,7 @@
 import Project from "../models/Projects.js";
 import User from "../models/User.js";
-import { ApiError } from "../utils/ApiError";
-import { asyncHandler } from "../utils/AsyncHandler";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/AsyncHandler.js";
 
 export const createProject = asyncHandler(async (req, res) => {
   const { name, description, skills, requirements } = req.body;

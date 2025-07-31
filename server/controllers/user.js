@@ -1,6 +1,6 @@
-import User from "../models/User";
-import { ApiError } from "../utils/ApiError";
-import { asyncHandler } from "../utils/AsyncHandler";
+import User from "../models/User.js";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/AsyncHandler.js";
 
 export const sendFriendRequet=asyncHandler(async(req,res)=>{
     const {friend}=req.body
