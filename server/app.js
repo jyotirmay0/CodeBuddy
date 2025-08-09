@@ -3,8 +3,11 @@ import cors from "cors";
 import {router as authRoutes} from "./routes/auth.js";
 import { router as userRouter } from "./routes/user.js";
 import { router as projectRouter } from "./routes/project.js";
+import http from "http";
+import setupSocket from "./utils/socket.js";
 
 const app=express()
+const server = http.createServer(app);
 
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
@@ -28,6 +31,11 @@ app.use((err, res) => {
     errors: err.errors || [],
     stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
   });
+});
+
+setupSocket(server);
+server.listen(8000, () => {
+  console.log("Server running on port 8000");
 });
 
 export {app}

@@ -77,6 +77,7 @@ const UserSchema=new mongoose.Schema({
     requests:[{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     projects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
     groups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
+    chatRooms: [{ type: mongoose.Schema.Types.ObjectId, ref: "MessageRoom" }],
     refreshToken:{
         type:String,
         default:""
