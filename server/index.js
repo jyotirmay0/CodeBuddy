@@ -4,6 +4,10 @@ import cluster from 'node:cluster';
 import http from 'node:http';
 import { availableParallelism } from 'node:os';
 import process from "node:process";
+import setupSocket from "./utils/socket.js";
+import setupVideoRTC from "./utils/videortc.js";
+import dotenv from "dotenv"
+dotenv.config()
 
 const numCPUs = availableParallelism();
 
@@ -24,15 +28,18 @@ if (cluster.isPrimary) {
     cluster.fork();
   }
 
-  cluster.on('exit', (worker, code, signal) => {
+  cluster.on('exit', (worker) => {
     console.log(`worker ${worker.process.pid} died`);
   });
 } else {
     connectDB().then(()=>{
         const server=http.createServer(app)
-        server.listen(process.env.PORT||3002,()=>{
+        
+        setupSocket(server);
+        setupVideoRTC(server);
+
+        server.listen(process.env.PORT,()=>{
             console.log(`Server running on PORT ${process.env.PORT}`)
         })
     })
-    .catch((err)=>console.error("DB connection failed. ",err))
 }

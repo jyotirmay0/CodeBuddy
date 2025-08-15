@@ -11,4 +11,5 @@ const MessageRoomSchema = new mongoose.Schema({
   messages: [singleMessageSchema]
 }, { timestamps: true });
 
-export default mongoose.model("MessageRoom", MessageRoomSchema);
+const MessageRoom= mongoose.model("MessageRoom", MessageRoomSchema);
+export default MessageRoom

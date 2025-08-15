@@ -3,11 +3,14 @@ import cors from "cors";
 import {router as authRoutes} from "./routes/auth.js";
 import { router as userRouter } from "./routes/user.js";
 import { router as projectRouter } from "./routes/project.js";
-import http from "http";
-import setupSocket from "./utils/socket.js";
+// import http from "http";
+// import setupSocket from "./utils/socket.js";
+// import setupVideoRTC from "./utils/videortc.js";
+import dotenv from "dotenv"
+dotenv.config()
 
 const app=express()
-const server = http.createServer(app);
+// const server = http.createServer(app);
 
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
@@ -33,9 +36,10 @@ app.use((err, res) => {
   });
 });
 
-setupSocket(server);
-server.listen(8000, () => {
-  console.log("Server running on port 8000");
-});
+// setupSocket(server);
+// setupVideoRTC(server); 
+// server.listen(3002, () => {
+//   console.log(`Server running on port ${3002}`);
+// })
 
 export {app}

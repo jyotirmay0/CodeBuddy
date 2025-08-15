@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
-import MessageRoom from "./models/message.model.js";
-import User from "./models/user.model.js";
+import MessageRoom from "../models/Messages.js";
+import User from "../models/User.js";
 import dotenv from "dotenv";
 dotenv.config();
 
