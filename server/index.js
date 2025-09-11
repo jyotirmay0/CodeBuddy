@@ -1,15 +1,11 @@
 import { app } from "./app.js"
 import mongoose from "mongoose";
-import cluster from 'node:cluster';
 import http from 'node:http';
-import { availableParallelism } from 'node:os';
 import process from "node:process";
 import setupSocket from "./utils/socket.js";
 import setupVideoRTC from "./utils/videortc.js";
 import dotenv from "dotenv"
 dotenv.config()
-
-const numCPUs = availableParallelism();
 
 const connectDB=async()=>{
     try {
@@ -21,25 +17,13 @@ const connectDB=async()=>{
     }
 }
 
-if (cluster.isPrimary) {
-  console.log(`Primary ${process.pid} is running`);
+connectDB().then(()=>{
+    const server=http.createServer(app)
+    
+    setupSocket(server);
+    setupVideoRTC(server);
 
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
-
-  cluster.on('exit', (worker) => {
-    console.log(`worker ${worker.process.pid} died`);
-  });
-} else {
-    connectDB().then(()=>{
-        const server=http.createServer(app)
-        
-        setupSocket(server);
-        setupVideoRTC(server);
-
-        server.listen(process.env.PORT,()=>{
-            console.log(`Server running on PORT ${process.env.PORT}`)
-        })
+    server.listen(process.env.PORT,()=>{
+        console.log(`Server running on PORT ${process.env.PORT}`)
     })
-}
+})

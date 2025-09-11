@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/AsyncHandler.js";
+import { AsyncHandler } from "../utils/AsyncHandler.js";
 import {ApiResponse} from "../utils/ApiResponse.js"
 import cloudinary from "../utils/Cloudinary.js"
 import fs from 'fs';
@@ -83,7 +83,7 @@ const getSuggestions = async (user, extraSkills, extraHobbies, extraInterests) =
 };
 
 
-export const sendFriendRequet=asyncHandler(async(req,res)=>{
+export const sendFriendRequet=AsyncHandler(async(req,res)=>{
     const {friend}=req.body
 
     const sender=await User.findById(req.user._id)
@@ -98,7 +98,7 @@ export const sendFriendRequet=asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200, null, "Friend request sent successfully"));
 })
 
-export const acceptFriendRequest=asyncHandler(async(req,res)=>{
+export const acceptFriendRequest=AsyncHandler(async(req,res)=>{
     const {friend}=req.body
 
     const sender=await User.findById(req.user._id)
@@ -117,7 +117,7 @@ export const acceptFriendRequest=asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200, null, "Friend request sent successfully"));
 })
 
-export const friendList = asyncHandler(async (req, res) => {
+export const friendList = AsyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("friends", "_id username");
 
   if (!user) throw new ApiError(404, "User not found");
@@ -127,7 +127,7 @@ export const friendList = asyncHandler(async (req, res) => {
   );
 });
 
-export const friendDetails=asyncHandler(async(req,res)=>{
+export const friendDetails=AsyncHandler(async(req,res)=>{
   const {id}=req.body
   const user=await User.findById(id).select("-password -verified -_id -createdAt -updatedAt")
   if(!user)throw new ApiError(401,"User not found");
@@ -136,7 +136,7 @@ export const friendDetails=asyncHandler(async(req,res)=>{
   )
 })
 
-export const uploadProfilePic = asyncHandler(async (req, res) => {
+export const uploadProfilePic = AsyncHandler(async (req, res) => {
   if (!req.file)throw new ApiError(400, "Image file is required");
   const localPath = req.file.path;
 
@@ -157,7 +157,7 @@ export const uploadProfilePic = asyncHandler(async (req, res) => {
   );
 });
 
-export const updateContact = asyncHandler(async (req, res) => {
+export const updateContact = AsyncHandler(async (req, res) => {
   const { contact } = req.body;
   const user = await User.findById(req.user._id);
   if (!user) throw new ApiError(404, "User not found");
@@ -170,7 +170,7 @@ export const updateContact = asyncHandler(async (req, res) => {
   );
 });
 
-export const updateUserDetails = asyncHandler(async (req, res) => {
+export const updateUserDetails = AsyncHandler(async (req, res) => {
   const { skills, interests, hobbies } = req.body;
 
   const user = await User.findById(req.user._id);
@@ -187,7 +187,7 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
   );
 });
 
-export const userDetails=asyncHandler(async(req,res)=>{
+export const userDetails=AsyncHandler(async(req,res)=>{
   if(!req.user)throw new ApiError(401,"User not authenticated");
   const user=await User.findById(req.user._id).select("-password -verified -_id -createdAt -updatedAt")
   return res.status(200).json(
@@ -195,7 +195,7 @@ export const userDetails=asyncHandler(async(req,res)=>{
   )
 })
 
-export const updatePassword=asyncHandler(async(req,res)=>{
+export const updatePassword=AsyncHandler(async(req,res)=>{
   const {oldPassword,newPassword}=req.body
 
   if (!oldPassword || !newPassword || oldPassword.trim() === "" || newPassword.trim() === "") {
@@ -217,7 +217,7 @@ export const updatePassword=asyncHandler(async(req,res)=>{
   )
 })
 
-export const friendSuggestions = asyncHandler(async (req, res) => {
+export const friendSuggestions = AsyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user) throw new ApiError(404, "User not found");
 

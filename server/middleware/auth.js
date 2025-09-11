@@ -1,10 +1,10 @@
-import { asyncHandler } from "../utils/AsyncHandler.js";
+import { AsyncHandler } from "../utils/AsyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import jwt from "jsonwebtoken"
 import User from "../models/User.js"
 
-export const verifyJWT = asyncHandler(async (req, res, next) => {
-    const token = req.headers.authorization.split(" ")[1];
+export const verifyJWT = AsyncHandler(async (req, res, next) => {
+    const token = req.headers.authorization.split(" ")[1] || req.cookies?.accessToken;
     if (!token)throw new ApiError(401, "Unauthorized request: No token provided");
 
     const decodedToken= jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);

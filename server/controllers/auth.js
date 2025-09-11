@@ -2,9 +2,15 @@ import jwt from "jsonwebtoken"
 import User from "../models/User.js"
 import { ApiError } from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
-import { asyncHandler } from "../utils/AsyncHandler.js"
+import { AsyncHandler } from "../utils/AsyncHandler.js"
 import { saveOTP,deleteOTP,getOTP } from '../utils/otpRedis.js';
 import { sendMail } from '../utils/SendMail.js';
+
+const cookieOptions={
+    httpOnly:true,
+    secure: process.env.NODE_ENV==="production",
+    sameSite: "none",
+  }
 
 const generateAccessAndRefreshToken=async(id)=>{
   try {
@@ -31,7 +37,7 @@ const generateAccessToken=async(id)=>{
   }
 } 
 
-export const register=asyncHandler(async(req,res)=>{
+export const register=AsyncHandler(async(req,res)=>{
   const {username,email,password}=req.body
 
   if([username,email,password].some((e)=>e==="")){
@@ -55,7 +61,7 @@ export const register=asyncHandler(async(req,res)=>{
   )
 })
 
-export const login=asyncHandler(async(req,res)=>{
+export const login=AsyncHandler(async(req,res)=>{
   const {credential,password}=req.body
 
   if(!credential||!password)throw new ApiError(400,"username/email and password required");
@@ -78,10 +84,12 @@ export const login=asyncHandler(async(req,res)=>{
   await user.save({ validateBeforeSave: false });
 
   return res.status(200)
+  .cookie("accessToken",accessToken,cookieOptions)
+  .cookie("refreshToken",refreshToken,cookieOptions)
   .json(new ApiResponse(200,{accessToken, refreshToken},"user logged in succesfully"))
 })
 
-export const logout=asyncHandler(async(req, res)=>{
+export const logout=AsyncHandler(async(req, res)=>{
   await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -95,11 +103,13 @@ export const logout=asyncHandler(async(req, res)=>{
   )
   
   return res.status(200)
+  .clearCookie("accessToken", cookieOptions)
+  .clearCookie("refreshToken", cookieOptions)
   .json(new ApiResponse(200,null,"User logged out successfully"))
 })
 
-export const refreshAccessToken=asyncHandler(async(req, res)=>{
-  const incomingRefreshToken = req.headers["x-refresh-token"];
+export const refreshAccessToken=AsyncHandler(async(req, res)=>{
+  const incomingRefreshToken=req.cookies.refreshToken
   if(!incomingRefreshToken){
     throw new ApiError(401, "Unauthorized request")
   }
@@ -116,13 +126,14 @@ export const refreshAccessToken=asyncHandler(async(req, res)=>{
     const {accessToken}=await generateAccessToken(user._id)
   
     return res.status(200)
+    .cookie("accessToken", accessToken, options)
     .json(new ApiResponse(200,{accessToken, refreshToken:incomingRefreshToken},"Access token refreshed"))
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid refresh token")
   }
 })
 
-export const sendOTP = asyncHandler(async (req, res) => {
+export const sendOTP = AsyncHandler(async (req, res) => {
   const { email } = req.body;
 
   if (!email) throw new ApiError(400, "Email is required");
@@ -139,7 +150,7 @@ export const sendOTP = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, null, "OTP sent successfully"));
 });
 
-export const verifyOTP = asyncHandler(async (req, res) => {
+export const verifyOTP = AsyncHandler(async (req, res) => {
   const { email, otp } = req.body;
 
   if (!email || !otp) throw new ApiError(400, "Email and OTP are required");

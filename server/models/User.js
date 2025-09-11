@@ -16,26 +16,21 @@ const UserSchema=new mongoose.Schema({
         type:String,
         default:""
     },
-    email:{
-        type:String,
-        required:true,
-        unique:true,
-    },
-    contact:{
+    dob:{
         type:Number,
-        default:0,
-    },
-    password:{
-        type:String,
         required:true
     },
-    verified:{
-        type:Boolean,
-        default:false
+    location:{
+        type:String,
+        required: true
     },
-    pic:{
+    avatar:{
         type: String,
         default: ""
+    },
+    bio:{
+        type: String,
+        default:""
     },
     skills:{
         type:[String],
@@ -72,6 +67,34 @@ const UserSchema=new mongoose.Schema({
                 "Model Building", "Rock Climbing", "Scuba Diving", "Magic Tricks", "Fantasy Sports"
             ],
         default:[]
+    },
+    projects:{
+        type:[String]
+    },
+    socials:{
+        type:[String]
+    },
+    email:{
+        type:String,
+        required:true,
+        unique:true,
+    },
+    contact:{
+        type:Number,
+        default:0,
+        unique:true
+    },
+    password:{
+        type:String,
+        required:true
+    },
+    verified:{
+        type:Boolean,
+        default:false
+    },
+    isOnline:{
+        type:Boolean,
+        default:false
     },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     requests:[{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
