@@ -5,21 +5,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code2, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { useDispatch } from "react-redux";
+import api from "@/axios";
+import { setCredentials } from "@/store";
 
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [credential, setCredential] = useState("");
   const [password, setPassword] = useState("");
+  const dispatch=useDispatch()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt:", { email, password });
+    try {
+      await api.post("/auth/login",{
+        credential:credential,
+        password
+      })
+      const res = await api.get('/user/details');
+      const { username, name, email } = res.data.data.user;
+      dispatch(setCredentials({ username, name, email }));
+      navigate('/dashboard')
+    } catch (error) {
+      console.error(error)
+    }
+    console.log("Login attempt:", { credential, password });
   };
 
   const handleGoBack = () => {
-    navigate(-1); // Go back to previous page
+    navigate(-1);
   };
 
   return (
@@ -55,8 +70,8 @@ export default function Login() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={credential}
+                onChange={(e) => setCredential(e.target.value)}
                 required
                 className="bg-background/50 border-border/50"
               />

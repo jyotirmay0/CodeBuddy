@@ -173,7 +173,8 @@ export const verifyOTP = AsyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
-  return res.status(200).json(
-    new ApiResponse(200, { accessToken, refreshToken }, "OTP verified and user verified successfully")
-  );
+  return res.status(200)
+  .cookie("accessToken",accessToken,cookieOptions)
+  .cookie("refreshToken",refreshToken,cookieOptions)
+  .json(new ApiResponse(200, { accessToken, refreshToken }, "OTP verified and user verified successfully"));
 });

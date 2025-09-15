@@ -4,8 +4,17 @@ import jwt from "jsonwebtoken"
 import User from "../models/User.js"
 
 export const verifyJWT = AsyncHandler(async (req, res, next) => {
-    const token = req.headers.authorization.split(" ")[1] || req.cookies?.accessToken;
-    if (!token)throw new ApiError(401, "Unauthorized request: No token provided");
+    let token;
+    if (req.headers?.authorization && req.headers.authorization.startsWith("Bearer ")) {
+        token = req.headers.authorization.split(" ")[1];
+    }
+    else if (req.cookies?.accessToken) {
+        token = req.cookies.accessToken;
+    }
+
+    if (!token) {
+        throw new ApiError(401, "Unauthorized request: No token provided");
+    }
 
     const decodedToken= jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     if(!decodedToken)throw new ApiError(401, "Invalid or Expired Access Token");

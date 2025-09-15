@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Navbar } from "@/components/layout/navbar";
+import { useEffect, useState } from "react";
+import Navbar from "@/components/layout/navbar";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, X, Code2, Gamepad2, Music, Coffee, MapPin, MessageCircle, UserPlus } from "lucide-react";
+import { Heart, X, Code2, MapPin, MessageCircle, UserPlus } from "lucide-react";
 
 // Mock data for random developers
 const mockDevelopers = [
@@ -18,6 +18,7 @@ const mockDevelopers = [
     bio: "Full-stack developer passionate about AI and machine learning. Love gaming and building cool apps in my free time!",
     skills: ["React", "Python", "TensorFlow", "Node.js", "Docker"],
     hobbies: ["Gaming", "AI Research", "Photography"],
+    interests: ["AI","Game Dev","Docker"],
     projects: 12,
     experience: "3 years",
     isOnline: true
@@ -31,6 +32,7 @@ const mockDevelopers = [
     bio: "Frontend developer with an eye for design. Coffee enthusiast and part-time music producer.",
     skills: ["Vue.js", "TypeScript", "Figma", "SCSS", "WebGL"],
     hobbies: ["Music Production", "Coffee", "Design"],
+    interests: ["AI","Game Dev","Docker"],
     projects: 8,
     experience: "4 years",
     isOnline: false
@@ -44,6 +46,7 @@ const mockDevelopers = [
     bio: "Backend engineer who loves building scalable systems. Fitness enthusiast and weekend hiker.",
     skills: ["Go", "Kubernetes", "PostgreSQL", "GraphQL", "AWS"],
     hobbies: ["Fitness", "Hiking", "Cooking"],
+    interests: ["AI","Game Dev","Docker"],
     projects: 15,
     experience: "6 years",
     isOnline: true
@@ -53,8 +56,23 @@ const mockDevelopers = [
 export default function Discover() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState<string | null>(null);
-
+  const [developers, setDevelopers] = useState<any[]>([]);
   const currentDeveloper = mockDevelopers[currentIndex];
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/discover`, {
+          credentials: 'include'
+        });
+        const data = await res.json();
+        setDevelopers(data.users); // Your backend should return a list of users
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  // const currentDeveloper = developers[currentIndex];
 
   const handleSwipe = (direction: 'like' | 'pass') => {
     setSwipeDirection(direction);
@@ -122,7 +140,7 @@ export default function Discover() {
                 )}
               </div>
               
-              <CardTitle className="text-xl">{currentDeveloper.name}, {currentDeveloper.age}</CardTitle>
+              <CardTitle className="text-xl">{currentDeveloper.name}{currentDeveloper.age ? `, ${currentDeveloper.age}` : ""}</CardTitle>
               <CardDescription className="flex items-center justify-center space-x-1">
                 <MapPin className="h-4 w-4" />
                 <span>{currentDeveloper.location}</span>
@@ -146,6 +164,17 @@ export default function Discover() {
                 </div>
               </div>
               
+              <div>
+                <p className="text-sm font-medium mb-2">Interests:</p>
+                <div className="flex flex-wrap gap-1">
+                  {currentDeveloper.interests.map((interest) => (
+                    <Badge key={interest} variant="outline" className="text-xs">
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <p className="text-sm font-medium mb-2">Hobbies:</p>
                 <div className="flex flex-wrap gap-1">

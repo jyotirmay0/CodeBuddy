@@ -17,14 +17,12 @@ const UserSchema=new mongoose.Schema({
         default:""
     },
     dob:{
-        type:Number,
-        required:true
+        type:Date,
     },
     location:{
         type:String,
-        required: true
     },
-    avatar:{
+    pic:{
         type: String,
         default: ""
     },
@@ -96,7 +94,7 @@ const UserSchema=new mongoose.Schema({
         type:Boolean,
         default:false
     },
-    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    buddies: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     requests:[{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     projects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
     groups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],

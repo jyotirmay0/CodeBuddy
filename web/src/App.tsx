@@ -10,10 +10,33 @@ import Projects from "./pages/Projects";
 import Groups from "./pages/Groups";
 import Discover from "./pages/Discover";
 import NotFound from "./pages/NotFound";
+import { useDispatch } from "react-redux";
+import { useEffect } from "react";
+import { clearCredentials, setCredentials } from "./store";
+import api from "./axios";
+import Dashboard from "./pages/Dashboard";
+import UserProfile from "./pages/UserProfile";
+import ProjectDetail from "./pages/ProjectDetail";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+function App(){ 
+  const dispatch=useDispatch()
+  useEffect(()=>{
+    const check=async()=>{
+      try {
+        const res=await api.get("user/details")
+        const {username,name,email}=res.data.data.user
+        dispatch(setCredentials({username,name,email}))
+      } catch (error) {
+        console.error(error)
+        dispatch(clearCredentials())
+      }
+    }
+    check()
+  },[dispatch])
+  return(
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -26,12 +49,16 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/groups" element={<Groups />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/project/:id" element={<ProjectDetail />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+
+          <Route path="/user/:id" element={<UserProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+)}
 
 export default App;

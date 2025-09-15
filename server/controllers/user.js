@@ -29,37 +29,55 @@ const allHobbies = ["Reading", "Writing", "Drawing", "Painting", "Photography", 
 
 const client = new InferenceClient(process.env.HF_TOKEN);
 
-const getSimilarItemsFromAI = async (userItems, allItems, categoryName, expandFactor = 2) => {
+const getSimilarItemsFromAICombined = async (user, allSkills, allHobbies, allInterests, expandFactor = 2) => {
   const prompt = `
-You're a recommendation system. Given a user's ${categoryName} and a full list of all possible ${categoryName}, suggest ${5 * expandFactor} items that the user does NOT have but are similar in meaning or context.
+  You're a recommendation system. Given a user's skills, hobbies and interests and full lists of each, 
+  suggest ${5 * expandFactor} new items per category that the user does NOT have but are similar.
 
-User's ${categoryName}: ${userItems.join(", ")}
-All ${categoryName}: ${allItems.join(", ")}
+  User's skills: ${user.skills.join(", ")}
+  All skills: ${allSkills.join(", ")}
 
-Return the response as a JSON array of strings, e.g.:
-["item1", "item2", "item3"]
-`;
+  User's hobbies: ${user.hobbies.join(", ")}
+  All hobbies: ${allHobbies.join(", ")}
 
-  const response = await client.chatCompletion({
-    provider: "featherless-ai",
-    model: "HuggingFaceH4/zephyr-7b-beta",
-    messages: [{ role: "user", content: prompt }],
-  });
+  User's interests: ${user.interests.join(", ")}
+  All interests: ${allInterests.join(", ")}
+
+  Return the response strictly as JSON object:
+  {
+    "skills": ["skill1","skill2"],
+    "hobbies": ["hobby1","hobby2"],
+    "interests": ["interest1","interest2"]
+  }
+  `;
+  const response = await
+    client.chatCompletion({
+      provider: "featherless-ai",
+      model: "HuggingFaceH4/zephyr-7b-beta",
+      messages: [{ role: "user", content: prompt }],
+    })
 
   try {
     const raw = response.choices[0].message.content;
-    return JSON.parse(raw).filter(item => !userItems.includes(item));
+    const parsed = JSON.parse(raw);
+
+    return {
+      skills: parsed.skills?.filter(item => !user.skills.includes(item)) || [],
+      hobbies: parsed.hobbies?.filter(item => !user.hobbies.includes(item)) || [],
+      interests: parsed.interests?.filter(item => !user.interests.includes(item)) || [],
+    };
   } catch (err) {
-    return [];
+    return { skills: [], hobbies: [], interests: [] };
   }
 };
+
 
 const getSuggestions = async (user, extraSkills, extraHobbies, extraInterests) => {
   const totalSkills = [...new Set([...user.skills, ...extraSkills])];
   const totalHobbies = [...new Set([...user.hobbies, ...extraHobbies])];
   const totalInterests = [...new Set([...user.interests, ...extraInterests])];
 
-  const excludeIds = [user._id.toString(), ...user.friends.map(id => id.toString())];
+  const excludeIds = [user._id.toString(), ...user.buddies.map(id => id.toString())];
 
   const users = await User.find({
     _id: { $nin: excludeIds },
@@ -83,52 +101,52 @@ const getSuggestions = async (user, extraSkills, extraHobbies, extraInterests) =
 };
 
 
-export const sendFriendRequet=AsyncHandler(async(req,res)=>{
-    const {friend}=req.body
+export const sendBuddyRequet=AsyncHandler(async(req,res)=>{
+    const {buddy}=req.body
 
     const sender=await User.findById(req.user._id)
-    const receiver=await User.findById(friend)
+    const receiver=await User.findById(buddy)
     if(!sender ||!receiver)throw new ApiError(404, "User not found");
 
-    if (receiver.requests.includes(sender._id))throw new ApiError(400, "Friend request already sent");
+    if (receiver.requests.includes(sender._id))throw new ApiError(400, "Buddy request already sent");
 
     receiver.requests.push(sender._id);
     await receiver.save({ validateBeforeSave: false });
 
-    return res.status(200).json(new ApiResponse(200, null, "Friend request sent successfully"));
+    return res.status(200).json(new ApiResponse(200, null, "Buddy request sent successfully"));
 })
 
-export const acceptFriendRequest=AsyncHandler(async(req,res)=>{
-    const {friend}=req.body
+export const acceptBuddyRequest=AsyncHandler(async(req,res)=>{
+    const {buddyId}=req.params
 
     const sender=await User.findById(req.user._id)
-    const receiver=await User.findById(friend)
+    const receiver=await User.findById(buddyId)
     if(!sender ||!receiver)throw new ApiError(404, "User not found");
 
-    if (receiver.friends.includes(sender._id))throw new ApiError(400, "Already in friend list");
+    if (receiver.buddies.includes(sender._id))throw new ApiError(400, "Already in buddy list");
 
-    receiver.friends.push(sender._id);
+    receiver.buddies.push(sender._id);
     receiver.requests = receiver.requests.filter(id => id.toString() !== sender._id.toString());
     await receiver.save({ validateBeforeSave: false });
 
-    sender.friends.push(receiver._id);
+    sender.buddies.push(receiver._id);
     await sender.save({ validateBeforeSave: false });
 
-    return res.status(200).json(new ApiResponse(200, null, "Friend request sent successfully"));
+    return res.status(200).json(new ApiResponse(200, null, "Buddy request sent successfully"));
 })
 
-export const friendList = AsyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).populate("friends", "_id username");
+export const buddyList = AsyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).populate("buddies", "_id username");
 
   if (!user) throw new ApiError(404, "User not found");
 
   return res.status(200).json(
-    new ApiResponse(200, { friends: user.friends }, "Friends fetched successfully")
+    new ApiResponse(200, { buddies: user.buddies }, "Buddies fetched successfully")
   );
 });
 
-export const friendDetails=AsyncHandler(async(req,res)=>{
-  const {id}=req.body
+export const buddyDetails=AsyncHandler(async(req,res)=>{
+  const { id } = req.params;
   const user=await User.findById(id).select("-password -verified -_id -createdAt -updatedAt")
   if(!user)throw new ApiError(401,"User not found");
   return res.status(200).json(
@@ -171,7 +189,7 @@ export const updateContact = AsyncHandler(async (req, res) => {
 });
 
 export const updateUserDetails = AsyncHandler(async (req, res) => {
-  const { skills, interests, hobbies } = req.body;
+  const { skills, interests, hobbies,name,dob,location,bio,projects,socials } = req.body;
 
   const user = await User.findById(req.user._id);
   if (!user) throw new ApiError(404, "User not found");
@@ -179,6 +197,11 @@ export const updateUserDetails = AsyncHandler(async (req, res) => {
   if (skills) user.skills = skills;
   if (interests) user.interests = interests;
   if (hobbies) user.hobbies = hobbies;
+  if (bio)user.bio=bio;
+  if(projects)user.projects=projects
+  if(socials)user.socials=socials
+
+  user.name=name;user.dob=dob;user.location=location;
 
   await user.save({ validateBeforeSave: false });
 
@@ -217,25 +240,26 @@ export const updatePassword=AsyncHandler(async(req,res)=>{
   )
 })
 
-export const friendSuggestions = AsyncHandler(async (req, res) => {
+export const buddySuggestions = AsyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user) throw new ApiError(404, "User not found");
-
-  const extraFactor = [2,3,4,5]; // two passes: normal and expanded
+  const extraFactor = [2];
   let suggestions = [];
 
   for (const factor of extraFactor) {
-    const [extraSkills, extraHobbies, extraInterests] = await Promise.all([
-      getSimilarItemsFromAI(user.skills, allSkills, "skills", factor),
-      getSimilarItemsFromAI(user.hobbies, allHobbies, "hobbies", factor),
-      getSimilarItemsFromAI(user.interests, allInterests, "interests", factor),
-    ]);
+    const extra = await getSimilarItemsFromAICombined(
+      user,
+      allSkills,
+      allHobbies,
+      allInterests,
+      factor
+    );
 
-    suggestions = await getSuggestions(user, extraSkills, extraHobbies, extraInterests);
-    if (suggestions.length >= 5) break; // accept results if 5+ users
+    suggestions = await getSuggestions(user, extra.skills, extra.hobbies, extra.interests);
+    if (suggestions.length >= 7) break;
   }
 
   return res.status(200).json(
-    new ApiResponse(200, { suggestions }, "AI-based friend suggestions fetched")
+    new ApiResponse(200, { suggestions }, "AI-based buddy suggestions fetched")
   );
 });
