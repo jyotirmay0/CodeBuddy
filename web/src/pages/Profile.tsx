@@ -9,7 +9,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Upload, CalendarIcon, Save, Lock, Mail } from "lucide-react";
+import { User, Upload, CalendarIcon, Save, Lock, Mail, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +32,7 @@ const HOBBIES = [
 
 export default function Profile() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string>("");
@@ -184,9 +186,20 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="container mx-auto max-w-4xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold gradient-text mb-2">Your Profile</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+        <div className="flex items-center justify-between mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="hover-lift"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold gradient-text mb-2">Your Profile</h1>
+            <p className="text-muted-foreground">Manage your account settings and preferences</p>
+          </div>
+          <div className="w-20"></div>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">

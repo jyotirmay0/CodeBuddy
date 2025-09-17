@@ -18,6 +18,7 @@ import Dashboard from "./pages/Dashboard";
 import UserProfile from "./pages/UserProfile";
 import ProjectDetail from "./pages/ProjectDetail";
 import Profile from "./pages/Profile";
+import { AnimatedBackground } from "./components/ui/animated-background";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ function App(){
   return(
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+    <div className="relative min-h-screen">
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -52,11 +54,11 @@ function App(){
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
-
           <Route path="/user/:id" element={<UserProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      </div>
     </TooltipProvider>
   </QueryClientProvider>
 )}

@@ -105,3 +105,163 @@ export const getMyProjects = AsyncHandler(async (req, res) => {
     new ApiResponse(200, projects, "Your projects fetched")
   );
 });
+
+export const getProjectById = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Populate owner and members with their username and avatar for the frontend
+  const project = await Project.findById(id)
+    .populate("owner", "username avatar")
+    .populate("members", "username avatar")
+    .populate("requests", "username avatar"); // Also show who has requested to join
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, project, "Project details fetched successfully")
+  );
+});
+
+// In project.controller.js
+export const updateProject = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, description, skills, requirements } = req.body;
+
+  const project = await Project.findById(id);
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  // Authorization: Only the owner can update the project
+  if (!project.owner.equals(req.user._id)) {
+    throw new ApiError(403, "You are not authorized to update this project");
+  }
+
+  // Update fields if they are provided
+  project.name = name || project.name;
+  project.description = description || project.description;
+  project.skills = skills || project.skills;
+  project.requirements = requirements || project.requirements;
+
+  await project.save({ validateBeforeSave: true }); // Use validation here
+
+  return res.status(200).json(
+    new ApiResponse(200, project, "Project updated successfully")
+  );
+});
+
+// In project.controller.js
+export const deleteProject = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const project = await Project.findById(id);
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  if (!project.owner.equals(req.user._id)) {
+    throw new ApiError(403, "Only the project owner can delete the project");
+  }
+
+  await Project.findByIdAndDelete(id);
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Project deleted successfully")
+  );
+});
+
+// In project.controller.js
+export const rejectJoinRequest = AsyncHandler(async (req, res) => {
+  const { id, userId } = req.params;
+
+  const project = await Project.findById(id);
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  if (!project.owner.equals(req.user._id)) {
+    throw new ApiError(403, "Only the project owner can reject requests");
+  }
+
+  if (!project.requests.includes(userId)) {
+    throw new ApiError(400, "User has not requested to join");
+  }
+
+  // Simply remove the user's ID from the requests array
+  project.requests = project.requests.filter(id => id.toString() !== userId);
+  await project.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Join request rejected")
+  );
+});
+
+// In project.controller.js
+export const removeMember = AsyncHandler(async (req, res) => {
+  const { id, userId } = req.params;
+
+  // You cannot remove yourself using this route; use a "leave" route for that.
+  if (req.user._id.toString() === userId) {
+      throw new ApiError(400, "You cannot remove yourself with this action.");
+  }
+
+  const project = await Project.findById(id);
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  if (!project.owner.equals(req.user._id)) {
+    throw new ApiError(403, "Only the project owner can remove members");
+  }
+  
+  if (!project.members.includes(userId)) {
+      throw new ApiError(404, "This user is not a member of the project.");
+  }
+
+  project.members = project.members.filter(memberId => memberId.toString() !== userId);
+  await project.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Member removed from the project")
+  );
+});
+
+// In project.controller.js
+export const leaveProject = AsyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const project = await Project.findById(id);
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  // The owner cannot leave the project; they must delete it or transfer ownership.
+  if (project.owner.equals(req.user._id)) {
+    throw new ApiError(400, "Owner cannot leave the project. Please delete it instead.");
+  }
+
+  if (!project.members.includes(req.user._id)) {
+    throw new ApiError(400, "You are not a member of this project.");
+  }
+
+  project.members = project.members.filter(memberId => !memberId.equals(req.user._id));
+  await project.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "You have left the project")
+  );
+});
+
+// In project.controller.js
+export const getJoinedProjects = AsyncHandler(async (req, res) => {
+  const projects = await Project.find({
+    members: req.user._id, // User is in the members array
+    owner: { $ne: req.user._id } // But is NOT the owner
+  }).populate("owner", "username");
+
+  return res.status(200).json(
+    new ApiResponse(200, projects, "Projects you've joined fetched")
+  );
+});

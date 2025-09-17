@@ -21,7 +21,10 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
+    const timer = setTimeout(() => {
     fetchUserData();
+  }, 200);
+  return () => clearTimeout(timer);
   }, []);
 
   const fetchUserData = async () => {
@@ -46,7 +49,7 @@ export default function Navbar() {
     }
   };
 
-  return (
+   return (
     <nav className="glass-effect border-b border-border/50 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-4">

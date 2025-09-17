@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, UserPlus, MapPin, Calendar, Code, Heart, Coffee, Star } from "lucide-react";
+import { MessageSquare, UserPlus, MapPin, Calendar, Code, Heart, Coffee, Star, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
@@ -13,6 +13,7 @@ import api from "@/axios";
 export default function UserProfile() {
   const { id } = useParams();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
@@ -84,6 +85,17 @@ export default function UserProfile() {
         </div>
 
         <div className="container mx-auto max-w-4xl relative z-10">
+           {/* Back Button */}
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="hover-lift"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </div>
           {/* Profile Header */}
           <Card className="glass-effect border-border/50 mb-8">
             <CardContent className="p-8">

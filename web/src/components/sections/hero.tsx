@@ -2,19 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Code2, Users, Sparkles, ArrowRight } from "lucide-react";
 import heroBackground from "@/assets/hero-background.jpg";
+import { AnimatedBackground } from "../ui/animated-background";
 
 export const Hero = () => {
   return (
     <section className="min-h-screen relative overflow-hidden flex items-center">
-      {/* Background */}
-      <div className="absolute inset-0">
-        <img 
-          src={heroBackground} 
-          alt="CodeBuddy Hero Background"
-          className="w-full h-full object-cover opacity-20"
-        />
-        <div className="absolute inset-0 gradient-secondary" />
-      </div>
+      <AnimatedBackground />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto text-center animate-slide-up">

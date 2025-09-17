@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Navbar from "@/components/layout/navbar";
-import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 // Mock data for coding groups
 const mockGroups = [
@@ -104,7 +104,7 @@ export default function Groups() {
 
   return (
     <div className="min-h-screen bg-background">
-      <FloatingParticles />
+      <AnimatedBackground/>
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">

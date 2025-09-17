@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Navbar from "@/components/layout/navbar";
-import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,7 @@ import { Plus, Search, Code2, Users, Calendar, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 // Mock data for demonstration
 const mockProjects = [
@@ -74,7 +74,7 @@ export default function Projects() {
 
   return (
     <div className="min-h-screen bg-background">
-      <FloatingParticles />
+      <AnimatedBackground/>
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">

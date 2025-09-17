@@ -10,22 +10,25 @@ import {
   Users, 
   Code, 
   MessageSquare, 
-  Calendar, 
   TrendingUp, 
-  Star, 
-  Target,
   Zap,
   Award,
   Activity,
   Plus,
   ArrowRight,
-  Rocket,
-  Coffee,
   Bell,
   Settings,
-  Search
+  Search,
+  Boxes
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AnimatedBackground } from "@/components/ui/animated-background";
+
+const SKILLS = [
+  "JavaScript", "Python", "Java", "C++", "HTML", "CSS", "React", "Node.js", "Express.js", "MongoDB","SQL", "TypeScript", "Git", "Docker", "Kubernetes", "AWS", "Azure", "Firebase",
+  "UI/UX Design", "Figma", "Sketch", "Adobe XD", "Photoshop", "Illustrator","Communication", "Teamwork", "Leadership", "Problem-solving", "Time management", "Public speaking","Project management", "Agile", "Scrum", "Data Analysis", "Machine Learning", "Deep Learning","Cybersecurity", "Networking", "Linux", "Cloud Computing", "DevOps", "CI/CD","Writing", "Editing", "Blogging", "Marketing", "SEO", "Sales", "Customer Support",
+  "Video Editing", "3D Modeling", "Animation", "Game Development", "AR/VR"
+];
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -42,7 +45,7 @@ export default function Dashboard() {
   useEffect(() => {
     const timer = setTimeout(() => {
     fetchDashboardData();
-  }, 200); // give cookies time to attach
+  }, 200);
   return () => clearTimeout(timer);
   }, []);
 
@@ -52,7 +55,7 @@ export default function Dashboard() {
       setUser(userRes.data?.data?.user || userRes.data?.data || null);
       
       try {
-        const projectsRes = await api.get('/project/my-projects');
+        const projectsRes = await api.get('/project/mine');
         setProjects(projectsRes.data?.data || []);
       } catch {
         setProjects([]);
@@ -71,9 +74,45 @@ export default function Dashboard() {
     }
   };
 
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    requirements: "",
+    skills: [] as string[],
+  });
+
+  const handleToggleSkill = (skill: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.includes(skill)
+        ? prev.skills.filter((s) => s !== skill)
+        : [...prev.skills, skill],
+    }));
+  };
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.post("/project/", formData);
+      setProjects((prev) => [...prev, res.data?.data]);
+      setShowCreateForm(false);
+      setFormData({
+        name: "",
+        description: "",
+        requirements: "",
+        skills: [],
+      });
+    } catch (error) {
+      console.error("Failed to create project", error);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+        <AnimatedBackground />
         <div className="text-center space-y-4 relative z-10">
           <div className="w-16 h-16 gradient-primary rounded-xl animate-pulse mx-auto flex items-center justify-center">
             <Code className="h-8 w-8 text-primary-foreground animate-bounce" />
@@ -88,7 +127,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">      
+    <div className="min-h-screen bg-background">
+      <AnimatedBackground />
+      
       {/* Header */}
       <div className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
@@ -229,16 +270,107 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))
+                ) : showCreateForm ? (
+                  <form
+                    onSubmit={handleCreateProject}
+                    className="space-y-4 max-w-xl mx-auto text-left animate-slide-up"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-semibold">New Project</h2>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowCreateForm(false)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="name" className="font-medium">Project Name</label>
+                      <input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, name: e.target.value }))
+                        }
+                        required
+                        className="w-full bg-background/50 border border-border rounded p-2 hover:opacity-90 transition-all duration-300 "
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="description" className="font-medium">Description</label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows={3}
+                        value={formData.description}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, description: e.target.value }))
+                        }
+                        required
+                        className="w-full bg-background/50 border border-border rounded p-2 hover:opacity-90 transition-all duration-300 "
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="requirements" className="font-medium">Requirements</label>
+                      <textarea
+                        id="requirements"
+                        name="requirements"
+                        rows={2}
+                        value={formData.requirements}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, requirements: e.target.value }))
+                        }
+                        required
+                        className="w-full bg-background/50 border border-border rounded p-2 hover:opacity-90 transition-all duration-300 "
+                      />
+                    </div>
+
+                    {/* Optional skills list */}
+                    <div className="space-y-2">
+                      <p className="font-medium">Skills</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SKILLS.map((skill) => (
+                          <Badge
+                            key={skill}
+                            variant={
+                              formData.skills.includes(skill) ? "default" : "outline"
+                            }
+                            className="cursor-pointer"
+                            onClick={() => handleToggleSkill(skill)}
+                          >
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full gradient-primary hover:opacity-90 transition-all duration-300 shadow-primary animate-glow"
+                    >
+                      Create Project
+                    </Button>
+                  </form>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Code className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No projects yet. Create your first project!</p>
-                    <Button className="mt-4 gradient-primary">
+                    <Button
+                      className="mt-4 gradient-primary"
+                      onClick={() => setShowCreateForm(true)}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Create Project
                     </Button>
                   </div>
                 )}
+
               </CardContent>
             </Card>
 
@@ -252,22 +384,30 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <Button className="h-24 flex-col gradient-primary hover-lift">
-                    <Plus className="h-6 w-6 mb-2" />
-                    New Project
-                  </Button>
-                  <Button variant="outline" className="h-24 flex-col hover-lift">
-                    <Search className="h-6 w-6 mb-2" />
-                    Find Buddies
-                  </Button>
-                  <Button variant="outline" className="h-24 flex-col hover-lift">
-                    <Users className="h-6 w-6 mb-2" />
-                    Join Groups
-                  </Button>
-                  <Button variant="outline" className="h-24 flex-col hover-lift">
-                    <MessageSquare className="h-6 w-6 mb-2" />
-                    Start Chat
-                  </Button>
+                  <Link to="/projects" className="block">
+                    <Button className="h-24 flex-col gradient-primary hover-lift w-full">
+                      <Boxes className="h-6 w-6 mb-2" />
+                      Join Project
+                    </Button>
+                  </Link>
+                  <Link to="/discover" className="block">
+                    <Button variant="outline" className="h-24 flex-col hover-lift w-full">
+                      <Search className="h-6 w-6 mb-2" />
+                      Find Buddies
+                    </Button>
+                  </Link>
+                  <Link to="/groups" className="block">
+                    <Button variant="outline" className="h-24 flex-col hover-lift w-full">
+                      <Users className="h-6 w-6 mb-2" />
+                      Join Groups
+                    </Button>
+                  </Link>
+                  <Link to="/chat" className="block">
+                    <Button variant="outline" className="h-24 flex-col hover-lift w-full">
+                      <MessageSquare className="h-6 w-6 mb-2" />
+                      Inbox
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

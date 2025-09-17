@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/navbar";
-import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, X, Code2, MapPin, MessageCircle, UserPlus } from "lucide-react";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 // Mock data for random developers
 const mockDevelopers = [
@@ -110,7 +110,7 @@ export default function Discover() {
 
   return (
     <div className="min-h-screen bg-background">
-      <FloatingParticles />
+      <AnimatedBackground/>
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
