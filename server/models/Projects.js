@@ -19,7 +19,7 @@ const ProjectSchema=new mongoose.Schema({
     },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    // messages: ,
+    chatRoom: { type: mongoose.Schema.Types.ObjectId, ref: 'MessageRoom' },
     requests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     status:{
         type:String,

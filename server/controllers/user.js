@@ -212,7 +212,7 @@ export const updateUserDetails = AsyncHandler(async (req, res) => {
 
 export const userDetails=AsyncHandler(async(req,res)=>{
   if(!req.user)throw new ApiError(401,"User not authenticated");
-  const user=await User.findById(req.user._id).select("-password -verified -_id -createdAt -updatedAt")
+  const user=await User.findById(req.user._id).select("-password -verified -createdAt -updatedAt")
   return res.status(200).json(
     new ApiResponse(200,{user},"User fetched successfully")
   )
@@ -261,5 +261,45 @@ export const buddySuggestions = AsyncHandler(async (req, res) => {
 
   return res.status(200).json(
     new ApiResponse(200, { suggestions }, "AI-based buddy suggestions fetched")
+  );
+});
+
+export const dashboardStats = AsyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+    .populate("projects", "_id")
+    .populate("buddies", "_id")
+    .lean();
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  const projectsJoined = user.projects?.length || 0;
+  const buddiesCount = user.buddies?.length || 0;
+  const skillsCount = user.skills?.length || 0;
+
+  const fields = [
+    user.name,
+    user.dob,
+    user.location,
+    user.pic,
+    user.bio,
+    user.skills?.length > 0,
+    user.socials?.length > 0,
+    user.deployedProjects?.length > 0,
+  ];
+
+  const filled = fields.filter(Boolean).length;
+  const profileCompletion = Math.round((filled / fields.length) * 100);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        projectsJoined,
+        buddiesCount,
+        skillsCount,
+        profileCompletion,
+      },
+      "Dashboard stats fetched successfully"
+    )
   );
 });

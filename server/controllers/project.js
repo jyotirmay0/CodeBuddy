@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { AsyncHandler } from "../utils/AsyncHandler.js";
+import MessageRoom from "../models/Messages.js"
 
 export const createProject = AsyncHandler(async (req, res) => {
   const { name, description, skills, requirements } = req.body;
@@ -11,13 +12,19 @@ export const createProject = AsyncHandler(async (req, res) => {
     throw new ApiError(400, "Name, description, and skills are required");
   }
 
+  const chatRoom = await MessageRoom.create({
+    name: `${name} Chat`,
+    members: [req.user._id],
+  });
+
   const project = await Project.create({
     name,
     description,
     skills,
     requirements,
     owner: req.user._id,
-    members: [req.user._id]
+    members: [req.user._id],
+    chatRoom: chatRoom._id
   });
 
   return res.status(201).json(
@@ -51,13 +58,15 @@ export const acceptJoinRequest = AsyncHandler(async (req, res) => {
 
   const project = await Project.findById(id);
   if (!project) throw new ApiError(404, "Project not found");
-
   if (!project.owner.equals(req.user._id))throw new ApiError(403, "Only project owner can accept requests");
-
   if (!project.requests.includes(userId))throw new ApiError(400, "User has not requested to join");
 
   project.requests = project.requests.filter(id => id.toString() !== userId);
   project.members.push(userId);
+
+  await MessageRoom.findByIdAndUpdate(project.chatRoom, {
+    $push: { members: userId },
+  });
 
   await project.save({ validateBeforeSave: false });
 
@@ -109,11 +118,24 @@ export const getMyProjects = AsyncHandler(async (req, res) => {
 export const getProjectById = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // Populate owner and members with their username and avatar for the frontend
   const project = await Project.findById(id)
     .populate("owner", "username avatar")
     .populate("members", "username avatar")
-    .populate("requests", "username avatar"); // Also show who has requested to join
+    .populate("requests", "username avatar")
+    .populate({
+      path: "chatRoom",
+      select: "name messages", 
+      model: "MessageRoom", 
+      options: {
+      perDocumentLimit: 50,
+      sort: { "messages.timestamp": -1 }
+      },
+      populate: {
+      path: "messages.sender", 
+      select: "username name pic", 
+      model: "User"
+      }
+    });
 
   if (!project) {
     throw new ApiError(404, "Project not found");
@@ -124,7 +146,6 @@ export const getProjectById = AsyncHandler(async (req, res) => {
   );
 });
 
-// In project.controller.js
 export const updateProject = AsyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, description, skills, requirements } = req.body;
@@ -152,7 +173,6 @@ export const updateProject = AsyncHandler(async (req, res) => {
   );
 });
 
-// In project.controller.js
 export const deleteProject = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -166,13 +186,12 @@ export const deleteProject = AsyncHandler(async (req, res) => {
   }
 
   await Project.findByIdAndDelete(id);
-
+  await MessageRoom.findByIdAndDelete(project.chatRoom);
   return res.status(200).json(
     new ApiResponse(200, {}, "Project deleted successfully")
   );
 });
 
-// In project.controller.js
 export const rejectJoinRequest = AsyncHandler(async (req, res) => {
   const { id, userId } = req.params;
 
@@ -198,7 +217,6 @@ export const rejectJoinRequest = AsyncHandler(async (req, res) => {
   );
 });
 
-// In project.controller.js
 export const removeMember = AsyncHandler(async (req, res) => {
   const { id, userId } = req.params;
 
@@ -221,6 +239,7 @@ export const removeMember = AsyncHandler(async (req, res) => {
   }
 
   project.members = project.members.filter(memberId => memberId.toString() !== userId);
+  await MessageRoom.findByIdAndUpdate(project.chatRoom, { $pull: { members: userId } });
   await project.save({ validateBeforeSave: false });
 
   return res.status(200).json(
@@ -228,7 +247,6 @@ export const removeMember = AsyncHandler(async (req, res) => {
   );
 });
 
-// In project.controller.js
 export const leaveProject = AsyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -247,6 +265,7 @@ export const leaveProject = AsyncHandler(async (req, res) => {
   }
 
   project.members = project.members.filter(memberId => !memberId.equals(req.user._id));
+  await MessageRoom.findByIdAndUpdate(project.chatRoom, { $pull: { members: req.user._id } });
   await project.save({ validateBeforeSave: false });
 
   return res.status(200).json(
@@ -254,7 +273,6 @@ export const leaveProject = AsyncHandler(async (req, res) => {
   );
 });
 
-// In project.controller.js
 export const getJoinedProjects = AsyncHandler(async (req, res) => {
   const projects = await Project.find({
     members: req.user._id, // User is in the members array

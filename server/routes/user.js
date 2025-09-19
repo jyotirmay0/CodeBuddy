@@ -9,7 +9,8 @@ import {
   acceptBuddyRequest,
   buddyList,
   buddySuggestions,
-  buddyDetails
+  buddyDetails,
+  dashboardStats
 } from "../controllers/user.js";
 import { verifyJWT } from "../middleware/auth.js";
 import upload from "../middleware/multer.js"
@@ -26,3 +27,4 @@ router.patch("/update-contact",verifyJWT,updateContact)
 router.get("/details",verifyJWT,userDetails)
 router.patch("/update-password",verifyJWT,updatePassword)
 router.patch("/update-details",verifyJWT,updateUserDetails)
+router.get("/stats", verifyJWT, dashboardStats);

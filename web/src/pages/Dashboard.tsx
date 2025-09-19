@@ -19,10 +19,19 @@ import {
   Bell,
   Settings,
   Search,
-  Boxes
+  Boxes,
+  Heart,
+  Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimatedBackground } from "@/components/ui/animated-background";
+
+type DashboardStats = {
+  projectsJoined: number;
+  buddiesCount: number;
+  skillsCount: number;
+  profileCompletion: number;
+};
 
 const SKILLS = [
   "JavaScript", "Python", "Java", "C++", "HTML", "CSS", "React", "Node.js", "Express.js", "MongoDB","SQL", "TypeScript", "Git", "Docker", "Kubernetes", "AWS", "Azure", "Firebase",
@@ -35,11 +44,11 @@ export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [buddies, setBuddies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    completedProjects: 12,
-    activeChats: 8,
-    profileStrength: 85,
-    weeklyProgress: 67
+  const [stats, setStats] = useState<DashboardStats>({
+    projectsJoined: 0,
+    buddiesCount: 0,
+    skillsCount: 0,
+    profileCompletion: 0
   });
 
   useEffect(() => {
@@ -66,6 +75,13 @@ export default function Dashboard() {
         setBuddies(buddiesRes.data?.data || []);
       } catch {
         setBuddies([]);
+      }
+
+      try {
+        const res = await api.get("/user/stats");
+        setStats(res.data.data);
+      } catch (error) {
+        console.error("Failed to fetch stats",error)
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -107,7 +123,6 @@ export default function Dashboard() {
       console.error("Failed to create project", error);
     }
   };
-
 
   if (loading) {
     return (
@@ -160,15 +175,15 @@ export default function Dashboard() {
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Projects */}
           <Card className="glass-effect border-border/50 hover-lift">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Projects</p>
-                  <div className="text-2xl font-bold">{projects.length}</div>
+                  <div className="text-2xl font-bold">{stats.projectsJoined}</div>
                   <p className="text-xs text-green-500 flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    +2 this week
+                    <TrendingUp className="h-3 w-3" /> +2 this week
                   </p>
                 </div>
                 <div className="h-12 w-12 gradient-primary rounded-lg flex items-center justify-center">
@@ -178,15 +193,15 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          {/* Buddies */}
           <Card className="glass-effect border-border/50 hover-lift">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Code Buddies</p>
-                  <div className="text-2xl font-bold">{buddies.length}</div>
+                  <div className="text-2xl font-bold">{stats.buddiesCount}</div>
                   <p className="text-xs text-blue-500 flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    5 online now
+                    <Users className="h-3 w-3" /> 5 online now
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -196,31 +211,29 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          {/* Skills */}
           <Card className="glass-effect border-border/50 hover-lift">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active Chats</p>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-yellow-500 flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" />
-                    3 unread
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">Skills Added</p>
+                  <div className="text-2xl font-bold">{stats.skillsCount}</div>
                 </div>
                 <div className="h-12 w-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="h-6 w-6 text-yellow-500" />
+                  <Star className="h-6 w-6 text-yellow-500" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Profile Completion */}
           <Card className="glass-effect border-border/50 hover-lift">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Profile Score</p>
-                  <div className="text-2xl font-bold">85%</div>
-                  <Progress value={85} className="mt-1" />
+                <div className="w-full">
+                  <p className="text-sm font-medium text-muted-foreground">Profile Completion</p>
+                  <div className="text-2xl font-bold">{stats.profileCompletion}%</div>
+                  <Progress value={stats.profileCompletion} className="mt-1" />
                 </div>
                 <div className="h-12 w-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <Award className="h-6 w-6 text-purple-500" />
@@ -248,24 +261,41 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {projects.length > 0 ? (
+                {projects.length > 0 && !showCreateForm? (
                   projects.slice(0, 3).map((project: any, index) => (
-                    <div key={project.id || index} className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-muted/20 transition-colors hover-lift">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 gradient-primary rounded-lg flex items-center justify-center">
-                          <Code className="h-5 w-5 text-primary-foreground" />
+                    <div>
+                      <Link
+                        key={project._id || index}
+                        to={`/project/${project._id}`}
+                        className="block"
+                      >
+                      <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-all hover-lift duration-300 ease-in-out cursor-pointer">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 gradient-primary rounded-lg flex items-center justify-center">
+                            <Code className="h-5 w-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{project.title}</h3>
+                            <p className="text-sm text-muted-foreground">{project.description}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold">{project.title}</h3>
-                          <p className="text-sm text-muted-foreground">{project.description}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={project.status === 'Active' ? 'default' : 'secondary'}>
+                            {project.status || 'Active'}
+                          </Badge>
+                          <Button size="sm" variant="ghost">
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={project.status === 'Active' ? 'default' : 'secondary'}>
-                          {project.status || 'Active'}
-                        </Badge>
-                        <Button size="sm" variant="ghost">
-                          <ArrowRight className="h-4 w-4" />
+                      </Link>
+                      <div className="text-center py-2 text-muted-foreground">
+                        <Button
+                          className="mt-4 gradient-primary"
+                          onClick={() => setShowCreateForm(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Project
                         </Button>
                       </div>
                     </div>
@@ -403,7 +433,7 @@ export default function Dashboard() {
                     </Button>
                   </Link>
                   <Link to="/chat" className="block">
-                    <Button variant="outline" className="h-24 flex-col hover-lift w-full">
+                    <Button className="h-24 flex-col gradient-primary hover-lift w-full">
                       <MessageSquare className="h-6 w-6 mb-2" />
                       Inbox
                     </Button>
@@ -426,7 +456,7 @@ export default function Dashboard() {
               <CardContent className="space-y-3">
                 {buddies.length > 0 ? (
                   buddies.slice(0, 4).map((buddy: any, index) => (
-                    <div key={buddy.id || index} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/20 transition-colors hover-lift">
+                    <div key={buddy._id || index} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/20 transition-colors hover-lift">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={buddy.pic} />
                         <AvatarFallback>{buddy.name?.[0] || 'U'}</AvatarFallback>

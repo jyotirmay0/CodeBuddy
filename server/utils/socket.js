@@ -8,7 +8,6 @@ export default function setupSocket(server) {
   const io = new Server(server, {
     cors: {
       origin: process.env.CORS_ORIGIN,
-      methods: ["GET", "POST"],
     }
   });
 
@@ -67,28 +66,39 @@ export default function setupSocket(server) {
     });
 
     // Send a message
+    // In utils/socket.js
+
     socket.on("send_message", async ({ roomId, senderId, content }) => {
       try {
         const trimmed = content?.trim();
         if (!trimmed) return;
 
         const room = await MessageRoom.findById(roomId);
-        if (!room?.members.includes(senderId)) return; // Sender not in room
+        if (!room?.members.includes(senderId)) return;
 
-        const newMessage = {
+        // 1. Fetch the sender's details
+        const senderDetails = await User.findById(senderId).select("name pic username");
+        if (!senderDetails) return; 
+
+        // 2. Prepare the message to be saved in the database
+        const newMessageForDB = {
           sender: senderId,
           content: trimmed,
           timestamp: new Date(),
         };
-
         await MessageRoom.findByIdAndUpdate(roomId, {
-          $push: { messages: newMessage }
+          $push: { messages: newMessageForDB },
         });
 
-        io.to(roomId).emit("receive_message", {
-          roomId,
-          ...newMessage
-        });
+        // 3. Create the rich message payload to send to the frontend
+        const payload = {
+          ...newMessageForDB,
+          sender: senderDetails, // Replace the sender ID with the full user object
+        };
+
+        // 4. Broadcast the rich payload
+        io.to(roomId).emit("receive_message", payload);
+
       } catch (err) {
         console.error("Error sending message:", err);
       }

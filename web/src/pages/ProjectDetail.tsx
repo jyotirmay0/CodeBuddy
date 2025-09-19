@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,18 +21,28 @@ import {
   Github,
   ExternalLink,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  Settings,
+  Trash2,
+  UserMinus,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  MessageSquareText
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
+import { FloatingParticles } from "@/components/ui/floating-particles";
 
 export default function ProjectDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const navigate= useNavigate()
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [actionLoading, setActionLoading] = useState("");
   const [chatMessage, setChatMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([
     { id: 1, user: "Alice", message: "Hey everyone! Just pushed the latest changes to the repo.", time: "2:30 PM", avatar: "/avatars/alice.jpg" },
@@ -41,47 +51,128 @@ export default function ProjectDetail() {
   ]);
 
   useEffect(() => {
-    if (id) {
-      fetchProjectDetails();
-    }
+    const timer = setTimeout(() => {
+      if (id) {
+        fetchProjectDetails();
+        fetchCurrentUser();
+      }
+    }, 200);
+    return () => clearTimeout(timer);
   }, [id]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await api.get('/user/details');
+      setCurrentUser(response.data?.data?.user || response.data?.data);
+    } catch (error) {
+      console.error('Failed to fetch current user:', error);
+    }
+  };
 
   const fetchProjectDetails = async () => {
     try {
-      // Mock project data - replace with actual API call
-      const mockProject = {
-        id: id,
-        title: "CodeBuddy Mobile App",
-        description: "A revolutionary mobile application for connecting developers worldwide. Built with React Native, Node.js, and MongoDB.",
-        owner: { name: "John Doe", username: "johndoe", avatar: "/avatars/john.jpg" },
-        members: [
-          { name: "Alice Smith", username: "alicesmith", avatar: "/avatars/alice.jpg", role: "Frontend Developer" },
-          { name: "Bob Johnson", username: "bobjohnson", avatar: "/avatars/bob.jpg", role: "Backend Developer" },
-          { name: "Charlie Brown", username: "charliebrown", avatar: "/avatars/charlie.jpg", role: "UI/UX Designer" },
-        ],
-        skills: ["React Native", "Node.js", "MongoDB", "TypeScript", "UI/UX Design"],
-        status: "Active",
-        createdAt: new Date("2024-01-15"),
-        deadline: new Date("2024-06-30"),
-        progress: 65,
-        githubUrl: "https://github.com/example/codebuddy-mobile",
-        liveUrl: "https://codebuddy-app.com",
-      };
-      setProject(mockProject);
-    } catch (error) {
+      const response = await api.get(`/project/${id}`);
+      setProject(response.data?.data);
+    } catch (error: any) {
       console.error('Failed to fetch project details:', error);
-      toast({ title: "Failed to load project", variant: "destructive" });
+      toast({ 
+        title: "Failed to load project", 
+        description: error.response?.data?.message || "Project not found",
+        variant: "destructive" 
+      });
+      navigate('/projects');
     } finally {
       setLoading(false);
     }
   };
 
   const handleJoinProject = async () => {
+    if (!id) return;
+    setActionLoading("join");
     try {
-      await api.post('/project/request-join', { projectId: id });
-      toast({ title: "Join request sent!" });
+      await api.post(`/project/${id}/request`);
+      toast({ title: "Join request sent successfully!" });
+      fetchProjectDetails(); // Refresh to show updated requests
     } catch (error: any) {
-      toast({ title: "Failed to send request", description: error.response?.data?.message, variant: "destructive" });
+      toast({ 
+        title: "Failed to send request", 
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive" 
+      });
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleAcceptRequest = async (userId: string) => {
+    if (!id) return;
+    setActionLoading(`accept-${userId}`);
+    try {
+      await api.put(`/project/${id}/accept/${userId}`);
+      toast({ title: "Request accepted!" });
+      fetchProjectDetails(); // Refresh data
+    } catch (error: any) {
+      toast({
+        title: "Failed to accept request",
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleRejectRequest = async (userId: string) => {
+    if (!id) return;
+    setActionLoading(`reject-${userId}`);
+    try {
+      await api.delete(`/project/${id}/reject/${userId}`);
+      toast({ title: "Request rejected" });
+      fetchProjectDetails(); // Refresh data
+    } catch (error: any) {
+      toast({
+        title: "Failed to reject request",
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!id || !confirm("Are you sure you want to remove this member?")) return;
+    setActionLoading(`remove-${userId}`);
+    try {
+      await api.delete(`/project/${id}/remove/${userId}`);
+      toast({ title: "Member removed successfully" });
+      fetchProjectDetails(); // Refresh data
+    } catch (error: any) {
+      toast({
+        title: "Failed to remove member",
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleLeaveProject = async () => {
+    if (!id || !confirm("Are you sure you want to leave this project?")) return;
+    setActionLoading("leave");
+    try {
+      await api.patch(`/project/${id}/leave`);
+      toast({ title: "Left project successfully" });
+      navigate('/projects');
+    } catch (error: any) {
+      toast({
+        title: "Failed to leave project",
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading("");
     }
   };
 
@@ -101,15 +192,26 @@ export default function ProjectDetail() {
   };
 
   const handleStartVideoCall = () => {
-    toast({ title: "Starting video call...", description: "This feature will be available soon!" });
+    toast({ title: "Starting video call..." });
+    navigate(`/project/${id}/video`);
+  };
+  const handleEnterchat = () => {
+    toast({ title: "Opening chat history" });
+    navigate(`/project/${id}/chat`);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 gradient-primary rounded-lg animate-pulse mx-auto"></div>
-          <p className="text-muted-foreground">Loading project...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+        <FloatingParticles />
+        <div className="text-center space-y-4 relative z-10">
+          <div className="w-16 h-16 gradient-primary rounded-xl animate-pulse mx-auto flex items-center justify-center">
+            <Code className="h-8 w-8 text-primary-foreground animate-bounce" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold gradient-text">Loading Project</h2>
+            <p className="text-muted-foreground">Fetching project details...</p>
+          </div>
         </div>
       </div>
     );
@@ -117,17 +219,32 @@ export default function ProjectDetail() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+        <FloatingParticles />
+        <div className="text-center space-y-4 relative z-10">
           <h2 className="text-2xl font-bold">Project Not Found</h2>
-          <p className="text-muted-foreground">The project you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground">The project you're looking for doesn't exist or has been removed.</p>
+          <Button onClick={() => navigate('/projects')} className="gradient-primary hover:opacity-90 transition-opacity">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Projects
+          </Button>
         </div>
       </div>
     );
   }
 
+  const isOwner = currentUser && project.owner && (currentUser._id === project.owner._id || currentUser.id === project.owner.id);
+  const isMember = currentUser && project.members?.some((member: any) => 
+    member._id === currentUser._id || member.id === currentUser.id || member === currentUser._id || member === currentUser.id
+  );
+  const hasRequested = currentUser && project.requests?.some((request: any) => 
+    request._id === currentUser._id || request.id === currentUser.id || request === currentUser._id || request === currentUser.id
+  );
+
   return (
     <div className="min-h-screen bg-background">
+      <FloatingParticles />
+      
       {/* Hero Section */}
       <section className="relative py-16 px-4 overflow-hidden">
         <div className="absolute inset-0 opacity-20">
@@ -147,6 +264,7 @@ export default function ProjectDetail() {
               Back
             </Button>
           </div>
+
           {/* Project Header */}
           <Card className="glass-effect border-border/50 mb-8">
             <CardContent className="p-8">
@@ -154,26 +272,49 @@ export default function ProjectDetail() {
                 <div className="flex-1 space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h1 className="text-4xl font-bold gradient-text mb-2">{project.title}</h1>
+                      <h1 className="text-4xl font-bold gradient-text mb-2">{project.name || project.title}</h1>
                       <div className="flex items-center gap-4 text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          Created {format(project.createdAt, "MMM yyyy")}
+                          Created {format(new Date(project.createdAt), "MMM yyyy")}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          Deadline {format(project.deadline, "MMM dd, yyyy")}
-                        </div>
-                        <Badge variant={project.status === 'Active' ? 'default' : 'secondary'}>
-                          {project.status}
+                        <Badge variant={project.status === 'open' ? 'default' : 'secondary'}>
+                          {project.status || 'open'}
                         </Badge>
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <Button onClick={handleJoinProject} className="gradient-primary animate-glow hover-lift">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Join Project
-                      </Button>
+                      {!isOwner && !isMember && (
+                        <Button 
+                          onClick={handleJoinProject} 
+                          disabled={hasRequested || actionLoading === "join"}
+                          className="gradient-primary animate-glow hover-lift"
+                        >
+                          {actionLoading === "join" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          {hasRequested ? (
+                            <>
+                              <Clock className="h-4 w-4 mr-2" />
+                              Request Sent
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              Join Project
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {isMember && !isOwner && (
+                        <Button 
+                          onClick={handleLeaveProject}
+                          disabled={actionLoading === "leave"}
+                          variant="destructive"
+                        >
+                          {actionLoading === "leave" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          Leave Project
+                        </Button>
+                      )}
                       <Button variant="outline" className="hover-lift">
                         <Star className="h-4 w-4 mr-2" />
                         Star
@@ -186,7 +327,7 @@ export default function ProjectDetail() {
                   </p>
 
                   <div className="flex flex-wrap gap-2">
-                    {project.skills.map((skill: string, index: number) => (
+                    {project.skills?.map((skill: string, index: number) => (
                       <Badge key={index} variant="secondary" className="hover-lift">
                         {skill}
                       </Badge>
@@ -195,15 +336,19 @@ export default function ProjectDetail() {
 
                   <div className="flex gap-4">
                     {project.githubUrl && (
-                      <Button variant="outline" size="sm" className="hover-lift">
-                        <Github className="h-4 w-4 mr-2" />
-                        GitHub
+                      <Button variant="outline" size="sm" className="hover-lift" asChild>
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                          <Github className="h-4 w-4 mr-2" />
+                          GitHub
+                        </a>
                       </Button>
                     )}
                     {project.liveUrl && (
-                      <Button variant="outline" size="sm" className="hover-lift">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Live Demo
+                      <Button variant="outline" size="sm" className="hover-lift" asChild>
+                        <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Live Demo
+                        </a>
                       </Button>
                     )}
                   </div>
@@ -216,27 +361,14 @@ export default function ProjectDetail() {
                       <CardTitle className="text-lg">Project Stats</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{project.progress}%</span>
-                        </div>
-                        <div className="w-full bg-muted/20 rounded-full h-2">
-                          <div 
-                            className="gradient-primary h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
                       <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
-                          <div className="text-2xl font-bold">{project.members.length}</div>
+                          <div className="text-2xl font-bold">{project.members?.length || 0}</div>
                           <p className="text-sm text-muted-foreground">Members</p>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold">47</div>
-                          <p className="text-sm text-muted-foreground">Commits</p>
+                          <div className="text-2xl font-bold">{project.requests?.length || 0}</div>
+                          <p className="text-sm text-muted-foreground">Pending</p>
                         </div>
                       </div>
                     </CardContent>
@@ -251,8 +383,9 @@ export default function ProjectDetail() {
             {/* Left Column - Project Details */}
             <div className="lg:col-span-2 space-y-6">
               <Tabs defaultValue="members" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="members" className="hover-lift">Members</TabsTrigger>
+                  {isOwner && <TabsTrigger value="requests" className="hover-lift">Requests ({project.requests?.length || 0})</TabsTrigger>}
                   <TabsTrigger value="timeline" className="hover-lift">Timeline</TabsTrigger>
                   <TabsTrigger value="files" className="hover-lift">Files</TabsTrigger>
                 </TabsList>
@@ -270,39 +403,131 @@ export default function ProjectDetail() {
                       <div className="flex items-center justify-between p-4 rounded-lg border border-primary/20 bg-primary/5">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={project.owner.avatar} />
-                            <AvatarFallback>{project.owner.name[0]}</AvatarFallback>
+                            <AvatarImage src={project.owner?.avatar} />
+                            <AvatarFallback>{project.owner?.name?.[0] || project.owner?.username?.[0] || 'O'}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-semibold">{project.owner.name}</p>
-                            <p className="text-sm text-muted-foreground">@{project.owner.username}</p>
+                            <p className="font-semibold">{project.owner?.name || project.owner?.username || 'Project Owner'}</p>
+                            <p className="text-sm text-muted-foreground">@{project.owner?.username || 'owner'}</p>
                           </div>
                         </div>
                         <Badge variant="default">Owner</Badge>
                       </div>
 
                       {/* Members */}
-                      {project.members.map((member: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/20 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={member.avatar} />
-                              <AvatarFallback>{member.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold">{member.name}</p>
-                              <p className="text-sm text-muted-foreground">@{member.username}</p>
-                              <p className="text-sm text-primary">{member.role}</p>
+                      {project.members?.map((member: any, index: number) => {
+                        const memberData = typeof member === 'string' ? { _id: member, name: 'Member', username: 'member' } : member;
+                        const memberId = memberData._id || memberData.id;
+                        
+                        return (
+                          <div key={index} className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/20 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12">
+                                <AvatarImage src={memberData.avatar} />
+                                <AvatarFallback>{memberData.name?.[0] || memberData.username?.[0] || 'M'}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-semibold">{memberData.name || memberData.username || 'Member'}</p>
+                                <p className="text-sm text-muted-foreground">@{memberData.username || 'member'}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost">
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                              {isOwner && memberId !== project.owner?._id && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={() => handleRemoveMember(memberId)}
+                                  disabled={actionLoading === `remove-${memberId}`}
+                                  className="text-red-500 hover:text-red-600"
+                                >
+                                  {actionLoading === `remove-${memberId}` ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              )}
                             </div>
                           </div>
-                          <Button size="sm" variant="ghost">
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                        );
+                      }) || (
+                        <p className="text-muted-foreground text-center py-4">No members yet</p>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
+
+                {isOwner && (
+                  <TabsContent value="requests" className="space-y-4">
+                    <Card className="glass-effect border-border/50">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <UserPlus className="h-5 w-5" />
+                          Join Requests
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {project.requests?.length > 0 ? (
+                          project.requests.map((request: any, index: number) => {
+                            const requestData = typeof request === 'string' ? { _id: request, name: 'User', username: 'user' } : request;
+                            const requestId = requestData._id || requestData.id;
+                            
+                            return (
+                              <div key={index} className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-muted/20 transition-colors">
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-12 w-12">
+                                    <AvatarImage src={requestData.avatar} />
+                                    <AvatarFallback>{requestData.name?.[0] || requestData.username?.[0] || 'U'}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-semibold">{requestData.name || requestData.username || 'User'}</p>
+                                    <p className="text-sm text-muted-foreground">@{requestData.username || 'user'}</p>
+                                    <p className="text-xs text-muted-foreground">Wants to join your project</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleAcceptRequest(requestId)}
+                                    disabled={actionLoading === `accept-${requestId}`}
+                                    className="gradient-primary hover:opacity-90"
+                                  >
+                                    {actionLoading === `accept-${requestId}` ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="destructive"
+                                    onClick={() => handleRejectRequest(requestId)}
+                                    disabled={actionLoading === `reject-${requestId}`}
+                                  >
+                                    {actionLoading === `reject-${requestId}` ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <XCircle className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <UserPlus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No join requests yet</p>
+                            <p className="text-sm">Users who request to join your project will appear here</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
 
                 <TabsContent value="timeline" className="space-y-4">
                   <Card className="glass-effect border-border/50">
@@ -411,6 +636,16 @@ export default function ProjectDetail() {
                       </Button>
                     </div>
                   </div>
+                  <div className="flex justify-center mb-3">
+                  <Button
+                    size="sm"
+                    onClick={handleEnterchat}
+                    className="gradient-accent"
+                  >
+                    <MessageSquareText className="h-4 w-4 mr-2" />
+                    Chat History
+                  </Button>
+                </div>
                 </CardContent>
               </Card>
             </div>

@@ -66,7 +66,7 @@ const UserSchema=new mongoose.Schema({
             ],
         default:[]
     },
-    projects:{
+    deployedProjects:{
         type:[String]
     },
     socials:{
