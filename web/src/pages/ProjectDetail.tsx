@@ -34,6 +34,9 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
 import { FloatingParticles } from "@/components/ui/floating-particles";
+import { io } from "socket.io-client";
+
+const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -43,12 +46,7 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState("");
-  const [chatMessage, setChatMessage] = useState("");
-  const [chatMessages, setChatMessages] = useState([
-    { id: 1, user: "Alice", message: "Hey everyone! Just pushed the latest changes to the repo.", time: "2:30 PM", avatar: "/avatars/alice.jpg" },
-    { id: 2, user: "Bob", message: "Great work! I'll review the PR shortly.", time: "2:35 PM", avatar: "/avatars/bob.jpg" },
-    { id: 3, user: "Charlie", message: "Should we schedule a video call to discuss the UI changes?", time: "2:40 PM", avatar: "/avatars/charlie.jpg" },
-  ]);
+  const [newMessage, setNewMessage] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -59,6 +57,33 @@ export default function ProjectDetail() {
     }, 200);
     return () => clearTimeout(timer);
   }, [id]);
+
+  useEffect(() => {
+    if (!project?.chatRoom?._id || !currentUser?._id) {
+      return;
+    }
+
+    const roomId = project.chatRoom._id;
+    const userId = currentUser._id;
+
+    socket.emit("join_room", { roomId, userId });
+
+    const handleReceiveMessage = (message) => {
+      setProject(prevProject => ({
+        ...prevProject,
+        chatRoom: {
+          ...prevProject.chatRoom,
+          messages: [...prevProject.chatRoom.messages, message]
+        }
+      }));
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+
+    return () => {
+      socket.off("receive_message", handleReceiveMessage);
+    };
+  }, [project, currentUser]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -176,19 +201,16 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!chatMessage.trim()) return;
-    
-    const newMessage = {
-      id: Date.now(),
-      user: "You",
-      message: chatMessage,
-      time: format(new Date(), "h:mm a"),
-      avatar: "/avatars/you.jpg"
-    };
-    
-    setChatMessages([...chatMessages, newMessage]);
-    setChatMessage("");
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !project || !currentUser) return;
+
+    socket.emit("send_message", {
+      roomId: project.chatRoom._id,
+      senderId: currentUser._id,
+      content: newMessage,
+    });
+    setNewMessage("");
   };
 
   const handleStartVideoCall = () => {
@@ -257,7 +279,7 @@ export default function ProjectDetail() {
           <div className="mb-6">
             <Button
               variant="ghost"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/dashboard")}
               className="hover-lift"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -600,52 +622,51 @@ export default function ProjectDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <ScrollArea className="h-80 px-6">
+                  <ScrollArea className="h-60 px-6">
                     <div className="space-y-4">
-                      {chatMessages.map((msg) => (
-                        <div key={msg.id} className="flex gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={msg.avatar} />
-                            <AvatarFallback>{msg.user[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-sm">{msg.user}</span>
-                              <span className="text-xs text-muted-foreground">{msg.time}</span>
+                      {/* Slice the array to get the last 3 messages */}
+                      {project?.chatRoom?.messages?.slice(-3).map((msg, index) => {
+                        const isCurrentUser = msg.sender?._id === currentUser?._id;
+                        return (
+                          <div key={index} className="flex gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={msg.sender?.pic} />
+                              <AvatarFallback>{msg.sender?.name?.[0] || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-sm">{msg.sender?.name || 'User'}</span>
+                                <span className="text-xs text-muted-foreground">{format(new Date(msg.timestamp), "h:mm a")}</span>
+                              </div>
+                              <p className="text-sm bg-muted/20 p-3 rounded-lg">
+                                {msg.content}
+                              </p>
                             </div>
-                            <p className="text-sm bg-muted/20 p-3 rounded-lg">{msg.message}</p>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </ScrollArea>
-                  
                   <Separator />
-                  
                   <div className="p-4">
-                    <div className="flex gap-2">
+                    <form onSubmit={handleSendMessage} className="flex gap-2">
                       <Input
-                        value={chatMessage}
-                        onChange={(e) => setChatMessage(e.target.value)}
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type a message..."
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         className="bg-background/50"
                       />
-                      <Button size="icon" onClick={handleSendMessage} className="gradient-primary animate-glow">
+                      <Button type="submit" size="icon" className="gradient-primary animate-glow">
                         <Send className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </form>
                   </div>
                   <div className="flex justify-center mb-3">
-                  <Button
-                    size="sm"
-                    onClick={handleEnterchat}
-                    className="gradient-accent"
-                  >
-                    <MessageSquareText className="h-4 w-4 mr-2" />
-                    Chat History
-                  </Button>
-                </div>
+                    <Button size="sm" onClick={handleEnterchat} className="gradient-accent">
+                      <MessageSquareText className="h-4 w-4 mr-2" />
+                      Chat History
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

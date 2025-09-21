@@ -145,12 +145,6 @@ export default function Login() {
                 Google
               </Button>
             </div>
-            
-            <div className="mt-4 p-3 bg-muted/20 rounded-lg border border-primary/20">
-              <p className="text-sm font-medium text-primary mb-1">Demo Credentials</p>
-              <p className="text-xs text-muted-foreground">Email: demo@codebuddy.com</p>
-              <p className="text-xs text-muted-foreground">Password: demo123</p>
-            </div>
           </div>
 
           <div className="mt-6 text-center">

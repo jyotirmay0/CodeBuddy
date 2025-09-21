@@ -308,7 +308,7 @@ export default function Projects() {
                   
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">
-                      {project.owner?.username || project.owner?.name || 'Anonymous'}
+                      {project.owner?.name || project.owner?.name || 'Anonymous'}
                     </p>
                     <div className="flex gap-2">
                       <Button 

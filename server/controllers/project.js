@@ -99,8 +99,9 @@ export const getAllOpenProjects = AsyncHandler(async (req, res) => {
   
   const projects = await Project.find({
     status: "open",
-    skills: { $in: user.skills || [] }
-  }).populate("owner", "username");
+    skills: { $in: user.skills || [] },
+    members: { $nin: [req.user._id] }
+  }).populate("owner", "username name pic");
 
   return res.status(200).json(
     new ApiResponse(200,projects, "Matching open projects fetched")

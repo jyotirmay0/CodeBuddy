@@ -102,10 +102,10 @@ const getSuggestions = async (user, extraSkills, extraHobbies, extraInterests) =
 
 
 export const sendBuddyRequet=AsyncHandler(async(req,res)=>{
-    const {buddy}=req.body
+    const { buddyId } = req.params;
 
     const sender=await User.findById(req.user._id)
-    const receiver=await User.findById(buddy)
+    const receiver=await User.findById(buddyId)
     if(!sender ||!receiver)throw new ApiError(404, "User not found");
 
     if (receiver.requests.includes(sender._id))throw new ApiError(400, "Buddy request already sent");
@@ -243,24 +243,25 @@ export const updatePassword=AsyncHandler(async(req,res)=>{
 export const buddySuggestions = AsyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user) throw new ApiError(404, "User not found");
-  const extraFactor = [2];
-  let suggestions = [];
 
-  for (const factor of extraFactor) {
-    const extra = await getSimilarItemsFromAICombined(
-      user,
-      allSkills,
-      allHobbies,
-      allInterests,
-      factor
-    );
-
-    suggestions = await getSuggestions(user, extra.skills, extra.hobbies, extra.interests);
-    if (suggestions.length >= 7) break;
+  const extra = await getSimilarItemsFromAICombined(user, allSkills, allHobbies, allInterests);
+  const suggestions = await getSuggestions(user, extra.skills, extra.hobbies, extra.interests);
+  
+  if (suggestions.length === 0) {
+    return res.status(200).json(new ApiResponse(200, [], "No AI suggestions found"));
   }
 
+  const suggestedIds = suggestions.map(s => s._id);
+
+  const usersToDisplay = await User.find({ _id: { $in: suggestedIds } })
+    .select("name dob location pic bio skills interests hobbies projects isOnline");
+
+  const sortedUsers = suggestedIds.map(id => 
+    usersToDisplay.find(u => u._id.equals(id))
+  ).filter(Boolean);
+
   return res.status(200).json(
-    new ApiResponse(200, { suggestions }, "AI-based buddy suggestions fetched")
+    new ApiResponse(200, sortedUsers, "AI-based buddy suggestions fetched")
   );
 });
 
@@ -301,5 +302,25 @@ export const dashboardStats = AsyncHandler(async (req, res) => {
       },
       "Dashboard stats fetched successfully"
     )
+  );
+});
+
+export const discoverUsers = AsyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) throw new ApiError(404, "User not found");
+
+  const excludeIds = [
+    user._id,
+    ...user.buddies.map(id => id.toString()),
+    ...user.requests.map(id => id.toString())
+  ];
+
+  const recentUsers = await User.find({ _id: { $nin: excludeIds } })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .select("name dob location pic bio skills interests hobbies projects isOnline");
+
+  return res.status(200).json(
+    new ApiResponse(200, recentUsers, "Recent users fetched successfully")
   );
 });

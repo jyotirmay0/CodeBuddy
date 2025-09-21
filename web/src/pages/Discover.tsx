@@ -1,247 +1,205 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, X, Code2, MapPin, MessageCircle, UserPlus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { X, Code2, MapPin, Loader2, Frown, Sparkles, Handshake, Send, Terminal, Bot, Cpu } from "lucide-react";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-
-// Mock data for random developers
-const mockDevelopers = [
-  {
-    id: 1,
-    name: "Alex Chen",
-    age: 25,
-    location: "San Francisco, CA",
-    avatar: "/placeholder.svg",
-    bio: "Full-stack developer passionate about AI and machine learning. Love gaming and building cool apps in my free time!",
-    skills: ["React", "Python", "TensorFlow", "Node.js", "Docker"],
-    hobbies: ["Gaming", "AI Research", "Photography"],
-    interests: ["AI","Game Dev","Docker"],
-    projects: 12,
-    experience: "3 years",
-    isOnline: true
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    age: 28,
-    location: "Austin, TX",
-    avatar: "/placeholder.svg",
-    bio: "Frontend developer with an eye for design. Coffee enthusiast and part-time music producer.",
-    skills: ["Vue.js", "TypeScript", "Figma", "SCSS", "WebGL"],
-    hobbies: ["Music Production", "Coffee", "Design"],
-    interests: ["AI","Game Dev","Docker"],
-    projects: 8,
-    experience: "4 years",
-    isOnline: false
-  },
-  {
-    id: 3,
-    name: "Mike Rodriguez",
-    age: 30,
-    location: "New York, NY",
-    avatar: "/placeholder.svg",
-    bio: "Backend engineer who loves building scalable systems. Fitness enthusiast and weekend hiker.",
-    skills: ["Go", "Kubernetes", "PostgreSQL", "GraphQL", "AWS"],
-    hobbies: ["Fitness", "Hiking", "Cooking"],
-    interests: ["AI","Game Dev","Docker"],
-    projects: 15,
-    experience: "6 years",
-    isOnline: true
-  }
-];
+import { useToast } from "@/hooks/use-toast";
+import api from "@/axios";
+import { differenceInYears } from "date-fns";
 
 export default function Discover() {
+  const [developers, setDevelopers] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [swipeDirection, setSwipeDirection] = useState<string | null>(null);
-  const [developers, setDevelopers] = useState<any[]>([]);
-  const currentDeveloper = mockDevelopers[currentIndex];
+  const [swipeDirection, setSwipeDirection] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const currentDeveloper = developers[currentIndex];
+
   useEffect(() => {
-    (async () => {
+    const fetchRecentDevelopers = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/discover`, {
-          credentials: 'include'
-        });
-        const data = await res.json();
-        setDevelopers(data.users); // Your backend should return a list of users
+        const res = await api.get('/user/discover');
+        setDevelopers(res.data?.data || []);
       } catch (err) {
-        console.error(err);
+        toast({ title: "Error", description: "Could not fetch developers.", variant: "destructive" });
+      } finally {
+        setLoading(false);
       }
-    })();
-  }, []);
+    };
+    fetchRecentDevelopers();
+  }, [toast]);
 
-  // const currentDeveloper = developers[currentIndex];
+  const handleAiSearch = async () => {
+    setIsAiLoading(true);
+    setCurrentIndex(0); // Reset the card stack
+    setDevelopers([]); // Clear the current list to show the AI loading state
+    try {
+      const res = await api.get('/user/buddy-suggestions');
+      setDevelopers(res.data?.data || []);
+      toast({ title: "AI Matchmaking Complete!", description: "Here are your personalized buddy suggestions." });
+    } catch (err) {
+      toast({ title: "AI Error", description: err.response?.data?.message || "Could not fetch AI suggestions.", variant: "destructive" });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
-  const handleSwipe = (direction: 'like' | 'pass') => {
+  const handleSwipe = async (direction, developerId) => {
+    if (!developerId || swipeDirection) return; // Prevent multiple swipes
     setSwipeDirection(direction);
-    
-    setTimeout(async() => {
-      if (direction === 'like') {
-        try {
-          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/${currentDeveloper.id}/request`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" }
-          });
 
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message);
-          console.log("Friend request sent:", data.message);
-        } catch (err) {
-          console.error("Error:", err.message);
-        }
+    if (direction === 'like') {
+      try {
+        await api.post(`/user/send-request/${developerId}`);
+        toast({ title: "Success!", description: `Buddy request sent to ${currentDeveloper.name}` });
+      } catch (err) {
+        toast({ title: "Error", description: err.response?.data?.message || "Could not send request.", variant: "destructive" });
       }
-      
-      setCurrentIndex((prev) => (prev + 1) % mockDevelopers.length);
+    }
+    
+    setTimeout(() => {
+      setCurrentIndex(prev => prev + 1);
       setSwipeDirection(null);
     }, 300);
   };
+  
+  const getAge = (dob) => dob ? differenceInYears(new Date(), new Date(dob)) : null;
 
-  const handleSendMessage = () => {
-    // TODO: Open message dialog or navigate to messages
-    console.log("Opening message to:", currentDeveloper?.name);
-  };
-
-  if (!currentDeveloper) {
-    return <div>Loading...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /><p className="ml-4">Finding coders...</p></div>;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <AnimatedBackground/>
       <Navbar />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8 animate-slide-up">
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        <div className="text-center mb-6 animate-slide-up">
           <h1 className="text-3xl font-bold mb-2">Discover Coders</h1>
-          <p className="text-muted-foreground">Find your perfect coding buddy and collaboration partner</p>
+          <p className="text-muted-foreground">Browse recent members or use our AI to find your Best Buddy.</p>
         </div>
 
-        <div className="max-w-md mx-auto">
-          <Card 
-            className={`glass-effect border-border/50 hover-lift transition-all duration-300 ${
-              swipeDirection === 'like' ? 'animate-slide-in-right' : 
-              swipeDirection === 'pass' ? 'animate-slide-in-left' : 
-              'animate-slide-up'
-            }`}
-          >
-            <CardHeader className="text-center">
-              <div className="relative">
-                <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary/20">
-                  <AvatarImage src={currentDeveloper.avatar} alt={currentDeveloper.name} />
-                  <AvatarFallback className="text-lg font-semibold gradient-primary text-primary-foreground">
-                    {currentDeveloper.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                {currentDeveloper.isOnline && (
-                  <div className="absolute bottom-4 right-1/2 translate-x-6 w-4 h-4 bg-success rounded-full border-2 border-background animate-glow" />
-                )}
-              </div>
-              
-              <CardTitle className="text-xl">{currentDeveloper.name}{currentDeveloper.age ? `, ${currentDeveloper.age}` : ""}</CardTitle>
-              <CardDescription className="flex items-center justify-center space-x-1">
-                <MapPin className="h-4 w-4" />
-                <span>{currentDeveloper.location}</span>
-              </CardDescription>
-            </CardHeader>
+        <div className="flex justify-center mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={handleAiSearch} disabled={isAiLoading} className="gradient-primary animate-glow shadow-primary">
+                  {isAiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  {isAiLoading ? "AI is Thinking..." : "AI Buddy Finder"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Uses AI to find the best matches for you. (Takes ~30 seconds)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground leading-relaxed">{currentDeveloper.bio}</p>
-              
-              <div>
-                <p className="text-sm font-medium mb-2 flex items-center space-x-1">
-                  <Code2 className="h-4 w-4" />
-                  <span>Skills:</span>
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {currentDeveloper.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary" className="text-xs">
-                      {skill}
-                    </Badge>
+        <div className="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh]">
+          {isAiLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-white">
+              <Cpu className="h-12 w-12 animate-pulse text-primary mb-4" />
+              <p className="text-lg font-semibold">Analyzing codebases...</p>
+              <p className="text-muted-foreground">Building your buddy list, give us a moment.</p>
+            </div>
+          ) : currentDeveloper ? (
+            <>
+              <Card 
+                className={`w-full glass-effect border-border/50 transition-all duration-300 ${
+                  swipeDirection === 'like' ? 'animate-slide-in-right' : 
+                  swipeDirection === 'pass' ? 'animate-slide-in-left' : 
+                  'animate-slide-up'
+                }`}
+              >
+                <CardHeader className="text-center">
+                  <div className="relative">
+                    <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary/20">
+                      <AvatarImage src={currentDeveloper.pic} alt={currentDeveloper.name} />
+                      <AvatarFallback className="text-lg font-semibold gradient-primary text-primary-foreground">
+                        {currentDeveloper.name?.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    {currentDeveloper.isOnline && (
+                      <div className="absolute bottom-4 right-1/2 translate-x-6 w-4 h-4 bg-green-500 rounded-full border-2 border-background animate-glow" />
+                    )}
+                  </div>
+                  
+                  <CardTitle className="text-xl">{currentDeveloper.name}{getAge(currentDeveloper.dob) ? `, ${getAge(currentDeveloper.dob)}` : ""}</CardTitle>
+                  {currentDeveloper.location && (
+                    <CardDescription className="flex items-center justify-center gap-1"><MapPin className="h-4 w-4" /><span>{currentDeveloper.location}</span></CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground h-16 overflow-y-auto">{currentDeveloper.bio}</p>
+                  
+                  {['skills', 'interests', 'hobbies'].map(cat => (
+                    currentDeveloper[cat]?.length > 0 && (
+                      <div key={cat}>
+                        <p className="flex items-center text-sm font-medium mb-1 capitalize">
+                          {cat === 'skills' && <Code2 className="h-4 w-4 mr-1 text-primary" />}
+                          {cat === 'interests' && <Terminal className="h-4 w-4 mr-1 text-primary" />}
+                          {cat === 'hobbies' && <Bot className="h-4 w-4 mr-1 text-primary" />}
+                          {cat}:
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {currentDeveloper[cat].map(item => (
+                            <Badge key={item} variant={cat==='skills'?'secondary':'outline'}>{item}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )
                   ))}
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium mb-2">Interests:</p>
-                <div className="flex flex-wrap gap-1">
-                  {currentDeveloper.interests.map((interest) => (
-                    <Badge key={interest} variant="outline" className="text-xs">
-                      {interest}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 gap-4 text-center py-2">
+                    <div className="flex flex-col items-center">
+                      <p className="text-2xl font-bold text-primary">{currentDeveloper.projects?.length || 0}</p> 
+                      <p className="text-xs text-muted-foreground">Projects</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-              <div>
-                <p className="text-sm font-medium mb-2">Hobbies:</p>
-                <div className="flex flex-wrap gap-1">
-                  {currentDeveloper.hobbies.map((hobby) => (
-                    <Badge key={hobby} variant="outline" className="text-xs">
-                      {hobby}
-                    </Badge>
-                  ))}
-                </div>
+              <div className="flex justify-center items-center space-x-4 mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                <Button variant="outline" size="icon" className="w-16 h-16 rounded-full border-destructive/50 hover:bg-destructive/10 hover:border-destructive transition-all duration-300 hover-lift" onClick={() => handleSwipe('pass', currentDeveloper._id)}>
+                  <X className="h-6 w-6 text-destructive" />
+                </Button>
+                
+                <Button variant="outline" size="icon" className="w-12 h-12 rounded-full border-primary/50 hover:bg-primary/10 hover:border-primary transition-all duration-300 hover-lift" 
+                // onClick={() => handleSendMessage(currentDeveloper._id)}
+                >
+                  <Send className="h-5 w-5 text-primary" />
+                </Button>
+                
+                <Button size="icon" variant="outline" className="w-16 h-16 rounded-full gradient-primary hover:opacity-90 transition-all duration-300 hover-lift shadow-primary animate-glow" onClick={() => handleSwipe('like', currentDeveloper._id)}>
+                  <Handshake className="h-6 w-6" />
+                </Button>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-center py-2">
-                <div>
-                  <p className="text-2xl font-bold text-primary">{currentDeveloper.projects}</p>
-                  <p className="text-xs text-muted-foreground">Projects</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-secondary">{currentDeveloper.experience}</p>
-                  <p className="text-xs text-muted-foreground">Experience</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-center space-x-4 mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <Button
-              variant="outline"
-              size="icon"
-              className="w-16 h-16 rounded-full border-destructive/50 hover:bg-destructive/10 hover:border-destructive transition-all duration-300 hover-lift"
-              onClick={() => handleSwipe('pass')}
-            >
-              <X className="h-6 w-6 text-destructive" />
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="icon"
-              className="w-12 h-12 rounded-full border-primary/50 hover:bg-primary/10 hover:border-primary transition-all duration-300 hover-lift"
-              onClick={handleSendMessage}
-            >
-              <MessageCircle className="h-5 w-5 text-primary" />
-            </Button>
-            
-            <Button
-              size="icon"
-              className="w-16 h-16 rounded-full gradient-primary hover:opacity-90 transition-all duration-300 hover-lift shadow-primary animate-glow"
-              onClick={() => handleSwipe('like')}
-            >
-              <Heart className="h-6 w-6" />
-            </Button>
-          </div>
-          
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Frown className="h-16 w-16 text-muted-foreground mb-4" />
+              <h2 className="text-2xl font-bold mb-2">That's everyone for now!</h2>
+              <p className="text-muted-foreground">You can try the AI Matchmaker or check back later.</p>
+            </div>
+          )}
+        </div>
+        
+        {/* Developers Remaining Count */}
+        {!isAiLoading && (
           <div className="text-center mt-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
             <p className="text-xs text-muted-foreground">
-              Swipe right to connect • Swipe left to pass
+              {developers.length - currentIndex - 1 > 0 ? `${developers.length - currentIndex - 1} more developers` : "You've seen them all!"}
             </p>
           </div>
-        </div>
-
-        <div className="mt-12 text-center animate-slide-up" style={{ animationDelay: '0.6s' }}>
-          <div className="inline-flex items-center space-x-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-full px-4 py-2">
-            <UserPlus className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">
-              {mockDevelopers.length - currentIndex - 1} more developers to discover
-            </span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
