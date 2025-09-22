@@ -18,9 +18,9 @@ import Dashboard from "./pages/Dashboard";
 import UserProfile from "./pages/UserProfile";
 import ProjectDetail from "./pages/ProjectDetail";
 import Profile from "./pages/Profile";
-import { AnimatedBackground } from "./components/ui/animated-background";
 import ProjectChat from "./pages/ProjectChat";
 import ProjectVideo from "./pages/ProjectVideo";
+import Inbox from "./pages/Inbox";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +59,7 @@ function App(){
           <Route path="/user/:id" element={<UserProfile />} />
           <Route path="/project/:id/chat" element={<ProjectChat />} />
           <Route path="/project/:id/video" element={<ProjectVideo />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

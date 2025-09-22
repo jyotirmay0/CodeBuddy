@@ -6,6 +6,8 @@ import cloudinary from "../utils/Cloudinary.js"
 import fs from 'fs';
 import { InferenceClient } from "@huggingface/inference";
 import dotenv from "dotenv"
+import MessageRoom from "../models/Messages.js";
+import Project from "../models/Projects.js";
 dotenv.config()
 
 const allSkills = ["JavaScript", "Python", "Java", "C++", "HTML", "CSS", "React", "Node.js", "Express.js", "MongoDB","SQL", "TypeScript", "Git", "Docker", "Kubernetes", "AWS", "Azure", "Firebase",
@@ -134,6 +136,38 @@ export const acceptBuddyRequest=AsyncHandler(async(req,res)=>{
 
     return res.status(200).json(new ApiResponse(200, null, "Buddy request sent successfully"));
 })
+
+export const rejectBuddyRequest = AsyncHandler(async (req, res) => {
+  const { buddyId } = req.params;
+
+  const receiver = await User.findById(req.user._id);
+  if (!receiver) throw new ApiError(404, "User not found");
+
+  const beforeCount = receiver.requests.length;
+  receiver.requests = receiver.requests.filter(id => id.toString() !== buddyId.toString());
+
+  if (receiver.requests.length === beforeCount) {
+    throw new ApiError(400, "No pending request from this user");
+  }
+
+  await receiver.save({ validateBeforeSave: false });
+
+  return res.status(200).json(new ApiResponse(200, null, "Buddy request rejected successfully"));
+});
+
+export const buddyRequests = AsyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).populate({
+    path: 'requests',
+    select: 'name dob location pic bio skills interests hobbies projects isOnline'
+  });
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  return res.status(200).json(
+    new ApiResponse(200, { received: user.requests || [] }, "Received buddy requests fetched successfully")
+  );
+});
+
 
 export const buddyList = AsyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("buddies", "_id username");
@@ -323,4 +357,108 @@ export const discoverUsers = AsyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, recentUsers, "Recent users fetched successfully")
   );
+});
+
+export const sendBuddyRequestWithMessage = AsyncHandler(async (req, res) => {
+  const { buddyId } = req.params;
+  const { content } = req.body;
+
+  const sender = await User.findById(req.user._id);
+  const receiver = await User.findById(buddyId);
+  if (!sender || !receiver) throw new ApiError(404, "User not found");
+
+  if (receiver.requests.includes(sender._id))
+    throw new ApiError(400, "Buddy request already sent");
+
+  receiver.requests.push(sender._id);
+  await receiver.save({ validateBeforeSave: false });
+
+  let room = await MessageRoom.findOne({
+    members: { $all: [sender._id, receiver._id], $size: 2 }
+  });
+
+  if (!room) {
+    room = await MessageRoom.create({
+      members: [sender._id, receiver._id],
+      messages: [],
+    });
+
+    await User.updateMany(
+      { _id: { $in: [sender._id, receiver._id] } },
+      { $push: { chatRooms: room._id } }
+    );
+  }
+
+  if (!content || !content.trim()) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Buddy request sent (no message content)"));
+  }
+
+  const message = {
+    sender: sender._id,
+    content: content.trim(),
+    timestamp: new Date(),
+  };
+
+  await MessageRoom.findByIdAndUpdate(room._id, {
+    $push: { messages: message },
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          roomId: room._id,
+          message,
+        },
+        "Buddy request sent and message delivered"
+      )
+    );
+});
+
+export const openChats = AsyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const rooms = await MessageRoom.find({ members: userId }).sort({ updatedAt: -1 });
+
+  const results = await Promise.all(
+    rooms.map(async (room) => {
+      const latestMessage = room.messages?.length
+        ? room.messages[room.messages.length - 1]
+        : null;
+
+      const project = await Project.findOne({ chatRoom: room._id });
+      if (project) {
+        return {
+          type: 'project',
+          projectId: project._id,
+          _id: room._id,
+          title: project.name,
+          latestMessage: latestMessage?.content || "",
+          latestMessageGiver: latestMessage
+            ? (await User.findById(latestMessage.sender).select("name")).name
+            : null,
+        };
+      } else {
+        const buddyId = room.members.find((m) => m.toString() !== userId.toString());
+        const buddy = await User.findById(buddyId).select("name");
+
+        return {
+          type: 'dm',
+          buddyId:buddy._id,
+          buddyAvatar: buddy.pic,
+          _id: room._id,
+          title: buddy.name,
+          latestMessage: latestMessage?.content || "",
+          latestMessageGiver: latestMessage
+            ? (await User.findById(latestMessage.sender).select("name")).name
+            : null,
+        };
+      }
+    })
+  );
+
+  return res.status(200).json(new ApiResponse(200, results, "Inbox found"));
 });

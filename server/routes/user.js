@@ -11,7 +11,11 @@ import {
   buddySuggestions,
   buddyDetails,
   dashboardStats,
-  discoverUsers
+  discoverUsers,
+  sendBuddyRequestWithMessage,
+  rejectBuddyRequest,
+  buddyRequests,
+  openChats
 } from "../controllers/user.js";
 import { verifyJWT } from "../middleware/auth.js";
 import upload from "../middleware/multer.js"
@@ -20,6 +24,8 @@ export const router = Router();
 
 router.post("/send-request/:buddyId", verifyJWT, sendBuddyRequet);
 router.patch("/buddy-requests/:buddyId/accept", verifyJWT, acceptBuddyRequest);
+router.delete("/buddy-requests/:buddyId/reject", verifyJWT, rejectBuddyRequest);
+router.get("/buddy-requests", verifyJWT, buddyRequests);
 router.get("/buddies", verifyJWT, buddyList);
 router.get("/buddy-suggestions", verifyJWT, buddySuggestions);
 router.get("/buddy-details/:id",verifyJWT,buddyDetails)
@@ -30,3 +36,5 @@ router.patch("/update-password",verifyJWT,updatePassword)
 router.patch("/update-details",verifyJWT,updateUserDetails)
 router.get("/discover", verifyJWT, discoverUsers);
 router.get("/stats", verifyJWT, dashboardStats);
+router.post("/send-message/:buddyId", verifyJWT, sendBuddyRequestWithMessage);
+router.get("/inbox",verifyJWT,openChats)

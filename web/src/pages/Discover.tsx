@@ -1,25 +1,31 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { X, Code2, MapPin, Loader2, Frown, Sparkles, Handshake, Send, Terminal, Bot, Cpu } from "lucide-react";
-import { AnimatedBackground } from "@/components/ui/animated-background";
+import { X, Code2, MapPin, Loader2, Frown, Sparkles, Handshake, Send, Terminal, Bot, Cpu, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
 import { differenceInYears } from "date-fns";
+import { FloatingParticles } from "@/components/ui/floating-particles";
 
 export default function Discover() {
-  const [developers, setDevelopers] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [recentDevelopers, setRecentDevelopers] = useState([]);
+  const [aiDevelopers, setAiDevelopers] = useState([]);
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [aiFetched, setAiFetched] = useState(false);
+  const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageTarget, setMessageTarget] = useState(null);
+
+  const developers = isAiMode ? aiDevelopers : recentDevelopers;
 
   const currentDeveloper = developers[currentIndex];
 
@@ -27,8 +33,18 @@ export default function Discover() {
     const fetchRecentDevelopers = async () => {
       setLoading(true);
       try {
-        const res = await api.get('/user/discover');
-        setDevelopers(res.data?.data || []);
+        const resDiscover = await api.get('/user/discover');
+        const latestUsers = resDiscover.data?.data?.slice(0, 25) || [];
+        const resReceived = await api.get('/user/buddy-requests');
+        const receivedRequests = resReceived.data?.data?.received || [];
+
+        const randomReceived = receivedRequests
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 25);
+        const combined = [...latestUsers, ...randomReceived]
+          .sort(() => 0.5 - Math.random());
+
+        setRecentDevelopers(combined);
       } catch (err) {
         toast({ title: "Error", description: "Could not fetch developers.", variant: "destructive" });
       } finally {
@@ -38,18 +54,24 @@ export default function Discover() {
     fetchRecentDevelopers();
   }, [toast]);
 
-  const handleAiSearch = async () => {
-    setIsAiLoading(true);
-    setCurrentIndex(0); // Reset the card stack
-    setDevelopers([]); // Clear the current list to show the AI loading state
-    try {
-      const res = await api.get('/user/buddy-suggestions');
-      setDevelopers(res.data?.data || []);
-      toast({ title: "AI Matchmaking Complete!", description: "Here are your personalized buddy suggestions." });
-    } catch (err) {
-      toast({ title: "AI Error", description: err.response?.data?.message || "Could not fetch AI suggestions.", variant: "destructive" });
-    } finally {
-      setIsAiLoading(false);
+  const handleToggleMode = async () => {
+    const enteringAiMode = !isAiMode;
+    setIsAiMode(enteringAiMode);
+    setCurrentIndex(0);
+
+    if (enteringAiMode && !aiFetched) {
+      setIsAiLoading(true);
+      try {
+        const res = await api.get('/user/buddy-suggestions');
+        setAiDevelopers(res.data?.data || []);
+        setAiFetched(true);
+        toast({ title: "AI Search Complete!", description: "Here are your personalized suggestions." });
+      } catch (err) {
+        toast({ title: "AI Error", description: err.response?.data?.message || "Could not fetch AI suggestions.", variant: "destructive" });
+        setIsAiMode(false);
+      } finally {
+        setIsAiLoading(false);
+      }
     }
   };
 
@@ -57,21 +79,83 @@ export default function Discover() {
     if (!developerId || swipeDirection) return; // Prevent multiple swipes
     setSwipeDirection(direction);
 
-    if (direction === 'like') {
-      try {
-        await api.post(`/user/send-request/${developerId}`);
-        toast({ title: "Success!", description: `Buddy request sent to ${currentDeveloper.name}` });
-      } catch (err) {
-        toast({ title: "Error", description: err.response?.data?.message || "Could not send request.", variant: "destructive" });
+    try {
+      if (direction === 'like') {
+        const res = await api.get('/user/buddy-requests');
+        const receivedRequests = res.data?.data?.received || [];
+
+        const hasSentRequest = receivedRequests.some(req => req._id === developerId);
+
+        if (hasSentRequest) {
+          await api.patch(`/user/buddy-requests/${developerId}/accept`);
+          toast({ title: "Bingo!", description: `You are now buddies with ${currentDeveloper.name}` });
+        } else {
+          await api.post(`/user/send-request/${developerId}`);
+          toast({ title: "Request Sent!", description: `Buddy request sent to ${currentDeveloper.name}` });
+        }
       }
+
+      if (direction === 'pass') {
+        await handlePass(developerId);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Something went wrong",
+        variant: "destructive"
+      });
+    } finally {
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+      }, 300);
     }
-    
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
-      setSwipeDirection(null);
-    }, 300);
+  };
+
+  const handleSendMessage = async (developerId, content) => {
+    if (!developerId) return;
+
+    if (!content || !content.trim()) {
+      toast({ title: "Error", description: "Message cannot be empty", variant: "destructive" });
+      return false;
+    }
+
+    try {
+      await api.post(`/user/send-message/${developerId}`, { content });
+      toast({
+        title: "Sent!",
+        description: `Buddy request and message sent`,
+      });
+      return true; // success
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Could not send message",
+        variant: "destructive",
+      });
+      return false; // error
+    }
   };
   
+  const handlePass = async (developerId) => {
+    try {
+      const res = await api.get('/user/buddy-requests');
+      const receivedRequests = res.data?.data?.received || [];
+
+      const hasSentRequest = receivedRequests.some(req => req._id === developerId);
+      if (hasSentRequest) {
+        // Reject their request
+        await api.delete(`/user/buddy-requests/${developerId}/reject`);
+        toast({ title: "Request Rejected", description: `You rejected ${currentDeveloper.name}'s request` });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Could not reject request",
+        variant: "destructive"
+      });
+    }
+  };
   const getAge = (dob) => dob ? differenceInYears(new Date(), new Date(dob)) : null;
 
   if (loading) {
@@ -80,7 +164,7 @@ export default function Discover() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnimatedBackground/>
+      <FloatingParticles/>
       <Navbar />
       <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="text-center mb-6 animate-slide-up">
@@ -92,13 +176,19 @@ export default function Discover() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={handleAiSearch} disabled={isAiLoading} className="gradient-primary animate-glow shadow-primary">
-                  {isAiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                  {isAiLoading ? "AI is Thinking..." : "AI Buddy Finder"}
-                </Button>
+                <Button onClick={handleToggleMode} disabled={isAiLoading} className="gradient-primary animate-glow shadow-primary">
+                {isAiLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : isAiMode ? (
+                  <Users className="h-4 w-4 mr-2" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                {isAiLoading ? "AI is Thinking..." : isAiMode ? "Show Recent Coders" : "AI Buddy Finder"}
+              </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Uses AI to find the best matches for you. (Takes ~30 seconds)</p>
+                <p>Uses AI to find the best buddies for you. (Takes ~30 seconds)</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -173,7 +263,10 @@ export default function Discover() {
                 </Button>
                 
                 <Button variant="outline" size="icon" className="w-12 h-12 rounded-full border-primary/50 hover:bg-primary/10 hover:border-primary transition-all duration-300 hover-lift" 
-                // onClick={() => handleSendMessage(currentDeveloper._id)}
+                onClick={() => {
+                  setMessageTarget(currentDeveloper._id);
+                  setIsMessageOpen(true);
+                }}
                 >
                   <Send className="h-5 w-5 text-primary" />
                 </Button>
@@ -187,7 +280,7 @@ export default function Discover() {
             <div className="flex flex-col items-center justify-center h-full text-center">
               <Frown className="h-16 w-16 text-muted-foreground mb-4" />
               <h2 className="text-2xl font-bold mb-2">That's everyone for now!</h2>
-              <p className="text-muted-foreground">You can try the AI Matchmaker or check back later.</p>
+              <p className="text-muted-foreground">You can try the AI Recommender or check back later.</p>
             </div>
           )}
         </div>
@@ -201,6 +294,45 @@ export default function Discover() {
           </div>
         )}
       </div>
+      {isMessageOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Send a message</h2>
+            <div className="space-y-2">
+              <textarea
+                id="message"
+                placeholder="Type your message here..."
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                className="w-full bg-background/50 min-h-[120px] rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsMessageOpen(false);
+                  setMessageContent("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  // call your helper, not the API directly
+                  const ok = await handleSendMessage(messageTarget, messageContent);
+                  if (ok) {
+                    setIsMessageOpen(false);
+                    setMessageContent("");
+                  }
+                }}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

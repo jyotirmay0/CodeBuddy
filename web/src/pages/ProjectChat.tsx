@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
 import { io } from "socket.io-client";
 import { format } from "date-fns";
-import { AnimatedBackground } from "@/components/ui/animated-background";
+import { FloatingParticles } from "@/components/ui/floating-particles";
 
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
@@ -88,7 +88,7 @@ export default function ProjectChat() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <AnimatedBackground />
+      <FloatingParticles/>
       <div className="container mx-auto px-4 py-8 relative z-10">
         <Card className="max-w-4xl mx-auto glass-effect border-border/50">
           <CardHeader className="border-b border-border/50">
@@ -108,7 +108,7 @@ export default function ProjectChat() {
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[60vh] p-6" ref={scrollAreaRef}>
-              <div className="space-y-6">
+              <div className="space-y-2">
                 {messages.map((msg, index) => {
                   const isCurrentUser = msg.sender?._id === currentUser?._id;
                   return (
@@ -119,10 +119,10 @@ export default function ProjectChat() {
                           <AvatarFallback>{msg.sender?.name?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
                       )}
-                      <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                      <div className={`max-w-xs min-w-36 md:max-w-md py-1 px-3 rounded-lg ${isCurrentUser ? "bg-zinc-900 text-primary-foreground" : "bg-muted"}`}>
                         {!isCurrentUser && <p className="text-xs font-bold mb-1">{msg.sender?.name || 'User'}</p>}
-                        <p className="text-sm">{msg.content}</p>
-                        <p className={`text-xs mt-1 opacity-70 ${isCurrentUser ? "text-right" : "text-left"}`}>
+                        <p className={`text-sm ${isCurrentUser ? "text-right" : "text-left"} text-neutral-300`}>{msg.content}</p>
+                        <p className={`text-[10px] mt-1 opacity-70 ${isCurrentUser ? "text-right" : "text-left"} text-neutral-300`}>
                           {format(new Date(msg.timestamp), "h:mm a")}
                         </p>
                       </div>

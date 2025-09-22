@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import api from "@/axios";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
   Code, 
@@ -24,7 +23,7 @@ import {
   Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AnimatedBackground } from "@/components/ui/animated-background";
+import { FloatingParticles } from "@/components/ui/floating-particles";
 
 type DashboardStats = {
   projectsJoined: number;
@@ -127,7 +126,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-        <AnimatedBackground />
+        <FloatingParticles/>
         <div className="text-center space-y-4 relative z-10">
           <div className="w-16 h-16 gradient-primary rounded-xl animate-pulse mx-auto flex items-center justify-center">
             <Code className="h-8 w-8 text-primary-foreground animate-bounce" />
@@ -143,7 +142,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnimatedBackground />
+      <FloatingParticles/>
       
       {/* Header */}
       <div className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
@@ -432,7 +431,7 @@ export default function Dashboard() {
                       Join Groups
                     </Button>
                   </Link>
-                  <Link to="/chat" className="block">
+                  <Link to="/inbox" className="block">
                     <Button className="h-24 flex-col gradient-primary hover-lift w-full">
                       <MessageSquare className="h-6 w-6 mb-2" />
                       Inbox
