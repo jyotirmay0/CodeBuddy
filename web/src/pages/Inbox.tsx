@@ -35,7 +35,7 @@ export default function Inbox() {
     if (chat.type === 'project') {
       navigate(`/project/${chat.projectId}/chat`);
     } else {
-      navigate(`/dm/${chat._id}/chat`);
+      navigate(`/buddy/${chat.buddyId}/chat`);
     }
   };
 
@@ -45,7 +45,7 @@ export default function Inbox() {
     if (chat.type === 'project') {
       navigate(`/project/${chat.projectId}/video`);
     } else {
-      navigate(`/dm/${chat._id}/video`);
+      navigate(`/buddy/${chat.buddyId}/video`);
     }
   };
 

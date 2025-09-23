@@ -462,3 +462,28 @@ export const openChats = AsyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, results, "Inbox found"));
 });
+
+export const getDmChat = AsyncHandler(async (req, res) => {
+  const { buddyId } = req.params;
+  const userId = req.user._id;
+
+  const room = await MessageRoom.findOne({
+    members: { $all: [userId, buddyId], $size: 2 },
+  })
+  .populate({
+    path: 'messages',
+    populate: { path: 'sender', select: 'name pic username' }
+  });
+
+  if (!room) {
+    return res.status(200).json(new ApiResponse(200, { messages: [] }, "No chat history found."));
+  }
+
+  const buddy = await User.findById(buddyId).select("name pic");
+  const response = {
+    room,
+    buddy
+  };
+
+  return res.status(200).json(new ApiResponse(200, response, "DM chat fetched successfully"));
+});

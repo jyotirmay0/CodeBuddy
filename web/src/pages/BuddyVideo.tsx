@@ -15,8 +15,8 @@ const ICE_SERVERS = {
   ],
 };
 
-export default function ProjectVideo() {
-  const { id: projectId } = useParams();
+export default function BuddyVideo() {
+  const { id: buddyId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -34,13 +34,13 @@ export default function ProjectVideo() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const [projectRes, userRes] = await Promise.all([
-          api.get(`/project/${projectId}`),
+        const [chatRes, userRes] = await Promise.all([
+          api.get(`/user/chat/${buddyId}`),
           api.get('/user/details')
         ]);
-        const projectData = projectRes.data?.data;
+        const chatData = chatRes.data?.data;
         const userData = userRes.data?.data?.user;
-        const chatRoomId = projectData.chatRoom._id;
+        const chatRoomId = chatData.room._id;
 
         setCurrentUser(userData);
         setRoomId(chatRoomId);
@@ -53,7 +53,7 @@ export default function ProjectVideo() {
 
         socket.emit("rtc_join", { roomId: chatRoomId, userId: userData._id }, (response) => {
           if (response.ok) {
-            toast({ title: `Joined call for ${projectData.name}` });
+            toast({ title: `Joined call for ${chatData.name}` });
             response.peers.forEach(socketId => createPeerConnection(socketId, true, chatRoomId));
           } else {
             toast({ title: "Error", description: `Could not join call: ${response.error}`, variant: "destructive" });
@@ -97,7 +97,7 @@ export default function ProjectVideo() {
       socket.off("rtc_ice_candidate");
       socket.off("rtc_peer_left");
     };
-  }, [projectId, navigate, toast, roomId]);
+  }, [navigate, toast, roomId,buddyId]);
 
   const createPeerConnection = (socketId, isInitiator, currentRoomId) => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
@@ -187,9 +187,7 @@ export default function ProjectVideo() {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col relative overflow-hidden">
       <AnimatedBackground />
-      {/* Video Grid */}
       <div className="flex-grow p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
-        {/* Local Video */}
         <div className="relative bg-black rounded-lg overflow-hidden glass-effect border-border/50">
           <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
           <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">
@@ -197,7 +195,6 @@ export default function ProjectVideo() {
           </div>
         </div>
         
-        {/* Remote Videos */}
         {Object.entries(remoteStreams).map(([socketId, stream]) => (
           <div key={socketId} className="relative bg-black rounded-lg overflow-hidden glass-effect border-border/50">
             <video
@@ -213,7 +210,6 @@ export default function ProjectVideo() {
         ))}
       </div>
 
-      {/* Controls */}
       <div className="bg-background/80 backdrop-blur-sm p-4 relative z-10">
         <div className="max-w-md mx-auto flex items-center justify-center gap-4">
           <Button onClick={toggleMute} variant="outline" size="lg" className="rounded-full h-14 w-14">

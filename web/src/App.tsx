@@ -21,6 +21,8 @@ import Profile from "./pages/Profile";
 import ProjectChat from "./pages/ProjectChat";
 import ProjectVideo from "./pages/ProjectVideo";
 import Inbox from "./pages/Inbox";
+import BuddyChat from "./pages/BuddyChat";
+import BuddyVideo from "./pages/BuddyVideo";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +62,8 @@ function App(){
           <Route path="/project/:id/chat" element={<ProjectChat />} />
           <Route path="/project/:id/video" element={<ProjectVideo />} />
           <Route path="/inbox" element={<Inbox />} />
+          <Route path="/buddy/:id/chat" element={<BuddyChat />} />
+          <Route path="/buddy/:id/video" element={<BuddyVideo/>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

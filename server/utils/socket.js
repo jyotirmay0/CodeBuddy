@@ -93,7 +93,8 @@ export default function setupSocket(server) {
         // 3. Create the rich message payload to send to the frontend
         const payload = {
           ...newMessageForDB,
-          sender: senderDetails, // Replace the sender ID with the full user object
+          sender: senderDetails,
+          roomId: roomId,
         };
 
         // 4. Broadcast the rich payload

@@ -1,24 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Send, Loader2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
 import { io } from "socket.io-client";
 import { format } from "date-fns";
-import { FloatingParticles } from "@/components/ui/floating-particles";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
-export default function ProjectChat() {
-  const { id: projectId } = useParams();
+export default function BuddyChat() {
+  const { id: buddyId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [project, setProject] = useState(null);
+  const [buddy, setBuddy] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -29,19 +29,19 @@ export default function ProjectChat() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectRes, userRes] = await Promise.all([
-          api.get(`/project/${projectId}`),
+        const [chatRes, userRes] = await Promise.all([
+          api.get(`/user/chat/${buddyId}`),
           api.get('/user/details')
         ]);
-        const projectData = projectRes.data?.data;
+        const chatData = chatRes.data?.data;
         const userData = userRes.data?.data?.user;
 
-        setProject(projectData);
+        setBuddy(chatData.buddy);
         setCurrentUser(userData);
-        setMessages((projectData.chatRoom?.messages || []).reverse());
-        setRoomId(projectData.chatRoom._id);
+        setMessages((chatData.room?.messages || []).reverse());
+        setRoomId(chatData.room?._id);
         
-        socket.emit("join_room", { roomId: projectData.chatRoom._id, userId: userData._id });
+        socket.emit("join_room", { roomId: chatData.room._id, userId: userData._id });
       } catch (error) {
         toast({ title: "Error", description: "Could not load chat.", variant: "destructive" });
         navigate(-1);
@@ -60,7 +60,7 @@ export default function ProjectChat() {
     return () => {
       socket.off("receive_message");
     };
-  }, [projectId, navigate, toast,roomId]);
+  }, [buddyId, navigate, toast, roomId]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -70,10 +70,10 @@ export default function ProjectChat() {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !project || !currentUser) return;
+    if (!newMessage.trim() || !roomId || !currentUser) return;
 
     socket.emit("send_message", {
-      roomId: project.chatRoom._id,
+      roomId: roomId,
       senderId: currentUser._id,
       content: newMessage,
     });
@@ -86,7 +86,7 @@ export default function ProjectChat() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <FloatingParticles/>
+      <AnimatedBackground/>
       <div className="container mx-auto px-4 py-8 relative z-10">
         <Card className="max-w-4xl mx-auto glass-effect border-border/50">
           <CardHeader className="border-b border-border/50">
@@ -95,10 +95,14 @@ export default function ProjectChat() {
                 <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={buddy?.pic} />
+                  <AvatarFallback>{buddy?.name?.[0]}</AvatarFallback>
+                </Avatar>
                 <div>
-                  <CardTitle>{project?.name} Chat</CardTitle>
+                  <CardTitle>Chat with {buddy?.name}</CardTitle>
                   <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                    <Users className="h-4 w-4" /> {project?.members?.length} Members
+                    <User className="h-4 w-4" /> Direct Message
                   </p>
                 </div>
               </div>

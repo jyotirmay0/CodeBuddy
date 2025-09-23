@@ -15,7 +15,8 @@ import {
   sendBuddyRequestWithMessage,
   rejectBuddyRequest,
   buddyRequests,
-  openChats
+  openChats,
+  getDmChat
 } from "../controllers/user.js";
 import { verifyJWT } from "../middleware/auth.js";
 import upload from "../middleware/multer.js"
@@ -38,3 +39,4 @@ router.get("/discover", verifyJWT, discoverUsers);
 router.get("/stats", verifyJWT, dashboardStats);
 router.post("/send-message/:buddyId", verifyJWT, sendBuddyRequestWithMessage);
 router.get("/inbox",verifyJWT,openChats)
+router.get("/chat/:buddyId", verifyJWT, getDmChat)
