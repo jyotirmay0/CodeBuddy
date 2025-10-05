@@ -155,9 +155,10 @@ export const verifyOTP = AsyncHandler(async (req, res) => {
 
   if (!email || !otp) throw new ApiError(400, "Email and OTP are required");
 
-  const storedOTP = await getOTP(email);
-  if (!storedOTP) throw new ApiError(401, "OTP expired or not found");
-  if (storedOTP !== otp) throw new ApiError(401, "Invalid OTP");
+  //random otp mode
+  // const storedOTP = await getOTP(email);
+  // if (!storedOTP) throw new ApiError(401, "OTP expired or not found");
+  // if (storedOTP !== otp) throw new ApiError(401, "Invalid OTP");
 
   await deleteOTP(email);
 

@@ -79,7 +79,6 @@ const UserSchema=new mongoose.Schema({
     },
     contact:{
         type:Number,
-        default:0,
         unique:true
     },
     password:{

@@ -121,17 +121,17 @@ export const sendBuddyRequet=AsyncHandler(async(req,res)=>{
 export const acceptBuddyRequest=AsyncHandler(async(req,res)=>{
     const {buddyId}=req.params
 
-    const sender=await User.findById(req.user._id)
-    const receiver=await User.findById(buddyId)
+    const receiver=await User.findById(req.user._id)
+    const sender=await User.findById(buddyId)
     if(!sender ||!receiver)throw new ApiError(404, "User not found");
 
     if (receiver.buddies.includes(sender._id))throw new ApiError(400, "Already in buddy list");
 
     receiver.buddies.push(sender._id);
-    receiver.requests = receiver.requests.filter(id => id.toString() !== sender._id.toString());
-    await receiver.save({ validateBeforeSave: false });
-
     sender.buddies.push(receiver._id);
+    receiver.requests = receiver.requests.filter(id => id.toString() !== sender._id.toString());
+
+    await receiver.save({ validateBeforeSave: false });
     await sender.save({ validateBeforeSave: false });
 
     return res.status(200).json(new ApiResponse(200, null, "Buddy request sent successfully"));
@@ -170,7 +170,7 @@ export const buddyRequests = AsyncHandler(async (req, res) => {
 
 
 export const buddyList = AsyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).populate("buddies", "_id username");
+  const user = await User.findById(req.user._id).populate("buddies");
 
   if (!user) throw new ApiError(404, "User not found");
 
@@ -434,7 +434,7 @@ export const openChats = AsyncHandler(async (req, res) => {
         return {
           type: 'project',
           projectId: project._id,
-          _id: room._id,
+          roomId: room._id,
           title: project.name,
           latestMessage: latestMessage?.content || "",
           latestMessageGiver: latestMessage
@@ -449,7 +449,7 @@ export const openChats = AsyncHandler(async (req, res) => {
           type: 'dm',
           buddyId:buddy._id,
           buddyAvatar: buddy.pic,
-          _id: room._id,
+          roomId: room._id,
           title: buddy.name,
           latestMessage: latestMessage?.content || "",
           latestMessageGiver: latestMessage
@@ -467,23 +467,15 @@ export const getDmChat = AsyncHandler(async (req, res) => {
   const { buddyId } = req.params;
   const userId = req.user._id;
 
-  const room = await MessageRoom.findOne({
+  let room = await MessageRoom.findOne({
     members: { $all: [userId, buddyId], $size: 2 },
-  })
-  .populate({
+  }).populate({
     path: 'messages',
     populate: { path: 'sender', select: 'name pic username' }
   });
 
-  if (!room) {
-    return res.status(200).json(new ApiResponse(200, { messages: [] }, "No chat history found."));
-  }
-
+  if (!room)room = await MessageRoom.create({ members: [userId, buddyId], messages: [] });
   const buddy = await User.findById(buddyId).select("name pic");
-  const response = {
-    room,
-    buddy
-  };
 
-  return res.status(200).json(new ApiResponse(200, response, "DM chat fetched successfully"));
+  return res.status(200).json(new ApiResponse(200, {room,buddy}, "DM chat fetched successfully"));
 });

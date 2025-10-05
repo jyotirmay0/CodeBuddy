@@ -15,7 +15,6 @@ const GroupSchema=new mongoose.Schema({
         type:[String],
         default:[]
     },
-    // messages: ,
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
 },{timestamps:true})
 

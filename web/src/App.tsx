@@ -58,7 +58,7 @@ function App(){
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/user/:id" element={<UserProfile />} />
+          <Route path="/buddy/:id" element={<UserProfile />} />
           <Route path="/project/:id/chat" element={<ProjectChat />} />
           <Route path="/project/:id/video" element={<ProjectVideo />} />
           <Route path="/inbox" element={<Inbox />} />

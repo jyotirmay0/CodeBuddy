@@ -31,6 +31,7 @@ app.use((err, req, res, next) => {
     errors: err.errors || [],
     stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
   });
+  console.error(err)
 });
 
 export {app}

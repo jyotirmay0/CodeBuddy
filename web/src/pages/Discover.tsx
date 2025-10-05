@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import api from "@/axios";
 import { differenceInYears } from "date-fns";
 import { FloatingParticles } from "@/components/ui/floating-particles";
+import { Link } from "react-router-dom";
 
 export default function Discover() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -210,6 +211,7 @@ export default function Discover() {
                   'animate-slide-up'
                 }`}
               >
+                <Link to={`/buddy/${currentDeveloper._id}`}>
                 <CardHeader className="text-center">
                   <div className="relative">
                     <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary/20">
@@ -255,6 +257,7 @@ export default function Discover() {
                     </div>
                   </div>
                 </CardContent>
+              </Link>
               </Card>
 
               <div className="flex justify-center items-center space-x-4 mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>

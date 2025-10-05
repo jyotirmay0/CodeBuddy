@@ -70,7 +70,7 @@ export default function Inbox() {
                 <div className="space-y-2">
                   {chats.map(chat => (
                     <div 
-                      key={chat._id} 
+                      key={chat.roomId} 
                       onClick={() => handleChatClick(chat)} 
                       className="flex items-center p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer animate-slide-up"
                     >

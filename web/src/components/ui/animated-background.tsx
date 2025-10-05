@@ -39,7 +39,8 @@ export const AnimatedBackground: React.FC = () => {
           vy: (Math.random() - 0.5) * 0.5,
           size: Math.random() * 2 + 1,
           opacity: Math.random() * 0.5 + 0.1,
-          hue: Math.random() * 120 + 180 // Cyan to purple range
+          // UPDATED: Changed hue to be in the new cyan/teal range
+          hue: Math.random() * 20 + 170 
         });
       }
       
@@ -52,7 +53,8 @@ export const AnimatedBackground: React.FC = () => {
       // Create gradient background
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
       const rootStyles = getComputedStyle(document.documentElement);
-      const bgColor = rootStyles.getPropertyValue('--background').trim() || '210 20% 98%'; // fallback
+      // UPDATED: Changed fallback color to match the new dark theme
+      const bgColor = rootStyles.getPropertyValue('--background').trim() || '220 15% 5%';
       const bgHSL = `hsl(${bgColor})`;
       gradient.addColorStop(0, bgHSL);
       gradient.addColorStop(1, bgHSL);
@@ -77,15 +79,15 @@ export const AnimatedBackground: React.FC = () => {
         ctx.globalAlpha = particle.opacity;
         
         // Create radial gradient for particle
-        const gradient = ctx.createRadialGradient(
+        const particleGradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
           particle.x, particle.y, particle.size * 4
         );
-        gradient.addColorStop(0, `hsl(${particle.hue}, 100%, 70%)`);
-        gradient.addColorStop(0.4, `hsl(${particle.hue}, 100%, 50%)`);
-        gradient.addColorStop(1, `hsl(${particle.hue}, 100%, 30%, 0)`);
+        particleGradient.addColorStop(0, `hsl(${particle.hue}, 100%, 70%)`);
+        particleGradient.addColorStop(0.4, `hsl(${particle.hue}, 100%, 50%)`);
+        particleGradient.addColorStop(1, `hsl(${particle.hue}, 100%, 30%, 0)`);
         
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = particleGradient;
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size * 4, 0, Math.PI * 2);
         ctx.fill();
@@ -139,17 +141,19 @@ export const AnimatedBackground: React.FC = () => {
     createParticles();
     animate();
 
-    // Handle resize
-    window.addEventListener('resize', () => {
+    const handleResize = () => {
       resizeCanvas();
       createParticles();
-    });
+    };
+
+    // Handle resize
+    window.addEventListener('resize', handleResize);
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
@@ -165,7 +169,7 @@ export const AnimatedBackground: React.FC = () => {
 export const FloatingOrbs: React.FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* Primary orb */}
+      {/* Primary orb - This will use the --primary CSS variable */}
       <div 
         className="absolute w-96 h-96 rounded-full opacity-20 animate-float blur-3xl"
         style={{
@@ -176,7 +180,7 @@ export const FloatingOrbs: React.FC = () => {
         }}
       />
       
-      {/* Secondary orb */}
+      {/* Secondary orb - This will use the --accent CSS variable */}
       <div 
         className="absolute w-80 h-80 rounded-full opacity-15 animate-float blur-3xl"
         style={{
@@ -188,7 +192,7 @@ export const FloatingOrbs: React.FC = () => {
         }}
       />
       
-      {/* Tertiary orb */}
+      {/* Tertiary orb - This will use the --primary CSS variable */}
       <div 
         className="absolute w-64 h-64 rounded-full opacity-10 animate-float blur-3xl"
         style={{
@@ -207,7 +211,8 @@ export const FloatingOrbs: React.FC = () => {
           key={i}
           className="absolute w-4 h-4 rounded-full animate-float"
           style={{
-            background: `hsl(${200 + i * 30}, 70%, 60%)`,
+            // UPDATED: Changed hue to be in the new cyan/teal range
+            background: `hsl(${170 + i * 5}, 80%, 60%)`,
             opacity: 0.3,
             top: `${Math.random() * 100}%`,
             left: `${Math.random() * 100}%`,

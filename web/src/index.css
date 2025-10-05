@@ -2,118 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CodeBuddy Design System - Modern Coding Platform 
+/* CodeBuddy Design System - Uplink Theme (Dark & Cyan)
 All colors MUST be HSL. Dark theme with vibrant tech colors.
 */
 
 @layer base {
   :root {
-    /* Core Background - Ultra Dark */
-    --background: 0 0% 2%;
-    --foreground: 0 0% 98%;
+    /* Core Background - Deep Space Blue */
+    --background: 220 15% 5%;
+    --foreground: 210 20% 95%;
 
-    /* Card System - Sleek Dark */
-    --card: 0 0% 4%;
-    --card-foreground: 0 0% 98%;
+    /* Card System - Slightly Lighter Deep Space */
+    --card: 220 15% 8%;
+    --card-foreground: 210 20% 95%;
 
     /* Interactive Elements */
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 15% 7%;
+    --popover-foreground: 210 20% 95%;
 
-    /* Primary Brand - Electric Blue */
-    --primary: 200 100% 60%;
-    --primary-foreground: 0 0% 2%;
-    --primary-glow: 200 100% 80%;
+    /* Primary Brand - Bright Cyan/Teal */
+    --primary: 175 90% 45%;
+    --primary-foreground: 175 10% 10%;
+    --primary-glow: 175 90% 65%;
 
-    /* Secondary - Neon Purple */
-    --secondary: 280 100% 70%;
-    --secondary-foreground: 0 0% 2%;
+    /* Secondary - Cool Gray */
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 210 20% 95%;
 
     /* Muted Elements */
-    --muted: 0 0% 8%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 220 10% 15%;
+    --muted-foreground: 220 10% 50%;
 
-    /* Accent - Cyber Green */
-    --accent: 120 100% 50%;
-    --accent-foreground: 0 0% 2%;
+    /* Accent - Same as Primary for this theme */
+    --accent: 175 90% 45%;
+    --accent-foreground: 175 10% 10%;
 
     /* Status Colors */
-    --destructive: 0 100% 60%;
+    --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 98%;
-    --success: 120 100% 50%;
-    --warning: 50 100% 60%;
+    --success: 130 70% 50%;
+    --warning: 40 90% 60%;
 
     /* Borders & Inputs */
-    --border: 0 0% 12%;
-    --input: 0 0% 8%;
-    --ring: 200 100% 60%;
+    --border: 220 15% 15%;
+    --input: 220 15% 10%;
+    --ring: 175 90% 45%;
 
     /* Design System Extensions */
     --radius: 0.75rem;
     
-    /* Gradients - Sleek & Cool */
-    --gradient-primary: linear-gradient(135deg, hsl(200 100% 60%), hsl(280 100% 70%));
-    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 4%), hsl(0 0% 8%));
-    --gradient-accent: linear-gradient(135deg, hsl(200 100% 60% / 0.1), hsl(120 100% 50% / 0.1));
-    --gradient-cyber: linear-gradient(45deg, hsl(200 100% 60%), hsl(280 100% 70%), hsl(120 100% 50%));
+    /* Gradients - Subtle & Techy */
+    --gradient-primary: linear-gradient(135deg, hsl(175 90% 45%), hsl(185 90% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 15% 8%), hsl(220 15% 12%));
+    --gradient-accent: linear-gradient(135deg, hsl(175 90% 45% / 0.1), hsl(185 90% 50% / 0.1));
+    --gradient-cyber: linear-gradient(45deg, hsl(175 90% 45%), hsl(185 90% 50%), hsl(170 80% 40%));
     
-    /* Shadows & Effects - Neon Glow */
-    --shadow-primary: 0 0 50px hsl(200 100% 60% / 0.4);
-    --shadow-secondary: 0 0 40px hsl(280 100% 70% / 0.3);
-    --shadow-accent: 0 0 30px hsl(120 100% 50% / 0.3);
+    /* Shadows & Effects - Cyan Glow */
+    --shadow-primary: 0 0 60px hsl(175 90% 45% / 0.3);
+    --shadow-secondary: 0 0 40px hsl(220 10% 20% / 0.3);
+    --shadow-accent: 0 0 50px hsl(175 90% 45% / 0.3);
     --shadow-elevated: 0 20px 40px -10px hsl(0 0% 0% / 0.8);
-    --shadow-neon: 0 0 60px hsl(200 100% 60% / 0.6), inset 0 0 30px hsl(200 100% 60% / 0.1);
+    --shadow-neon: 0 0 70px hsl(175 90% 45% / 0.5), inset 0 0 30px hsl(175 90% 45% / 0.1);
     
     /* Animation Variables */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     --transition-cyber: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 
+    /* --- Unused/Default ShadCN Vars (for compatibility) --- */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* NOTE: Since the base theme is already dark, this block can be used 
+       for slight variations or kept for structural compatibility.
+       For this theme, the dark mode is the default mode. */
+    --background: 220 15% 5%;
+    --foreground: 210 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 15% 8%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 15% 7%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 175 90% 45%;
+    --primary-foreground: 175 10% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 210 20% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 10% 15%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 175 90% 45%;
+    --accent-foreground: 175 10% 10%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 80% 60%;
+    --destructive-foreground: 210 20% 95%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 220 15% 15%;
+    --input: 220 15% 10%;
+    --ring: 175 90% 45%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -195,9 +193,9 @@ All colors MUST be HSL. Dark theme with vibrant tech colors.
   }
   
   .glass-effect {
-    backdrop-filter: blur(10px);
-    background: hsl(222 47% 12% / 0.8);
-    border: 1px solid hsl(270 100% 65% / 0.2);
+    backdrop-filter: blur(12px);
+    background: hsl(220 15% 8% / 0.7);
+    border: 1px solid hsl(175 90% 45% / 0.2);
   }
 }
 
@@ -246,10 +244,10 @@ All colors MUST be HSL. Dark theme with vibrant tech colors.
 
 @keyframes glow {
   0% {
-    box-shadow: 0 0 20px hsl(270 100% 65% / 0.5);
+    box-shadow: 0 0 20px hsl(175 90% 45% / 0.4);
   }
   100% {
-    box-shadow: 0 0 40px hsl(270 100% 65% / 0.8);
+    box-shadow: 0 0 40px hsl(175 90% 45% / 0.7);
   }
 }
 

@@ -21,10 +21,7 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    const timer = setTimeout(() => {
     fetchUserData();
-  }, 200);
-  return () => clearTimeout(timer);
   }, []);
 
   const fetchUserData = async () => {

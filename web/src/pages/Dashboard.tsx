@@ -12,18 +12,17 @@ import {
   TrendingUp, 
   Zap,
   Award,
-  Activity,
   Plus,
   ArrowRight,
   Bell,
   Settings,
   Search,
   Boxes,
-  Heart,
   Star
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FloatingParticles } from "@/components/ui/floating-particles";
+import Navbar from "@/components/layout/navbar";
 
 type DashboardStats = {
   projectsJoined: number;
@@ -49,6 +48,8 @@ export default function Dashboard() {
     skillsCount: 0,
     profileCompletion: 0
   });
+  const [buddyRequests, setBuddyRequests] = useState<any[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -71,7 +72,7 @@ export default function Dashboard() {
 
       try {
         const buddiesRes = await api.get('/user/buddies');
-        setBuddies(buddiesRes.data?.data || []);
+        setBuddies(buddiesRes.data?.data?.buddies?.slice(0, 3) || []);
       } catch {
         setBuddies([]);
       }
@@ -82,6 +83,14 @@ export default function Dashboard() {
       } catch (error) {
         console.error("Failed to fetch stats",error)
       }
+
+      try {
+        const buddyReqRes = await api.get("/user/buddy-requests");
+        setBuddyRequests(buddyReqRes.data?.data?.received || []);
+      } catch {
+        setBuddyRequests([]);
+      }
+
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -123,6 +132,24 @@ export default function Dashboard() {
     }
   };
 
+  const handleAccept = async (buddyId: string) => {
+    try {
+      await api.patch(`/user/buddy-requests/${buddyId}/accept`);
+      setBuddyRequests(prev => prev.filter(b => b._id !== buddyId));
+    } catch (err) {
+      console.error("Accept failed", err);
+    }
+  };
+
+  const handleReject = async (buddyId: string) => {
+    try {
+      await api.delete(`/user/buddy-requests/${buddyId}/reject`);
+      setBuddyRequests(prev => prev.filter(b => b._id !== buddyId));
+    } catch (err) {
+      console.error("Reject failed", err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
@@ -143,32 +170,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <FloatingParticles/>
-      
-      {/* Header */}
-      <div className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold gradient-text">
-                Welcome back, {user?.name || 'Coder'}! 👋
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Ready to build something amazing today?
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4 mr-2" />
-                Notifications
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navbar/>
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 py-8">
@@ -259,7 +261,7 @@ export default function Dashboard() {
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 {projects.length > 0 && !showCreateForm? (
                   projects.slice(0, 3).map((project: any, index) => (
                     <div>
@@ -288,15 +290,6 @@ export default function Dashboard() {
                         </div>
                       </div>
                       </Link>
-                      <div className="text-center py-2 text-muted-foreground">
-                        <Button
-                          className="mt-4 gradient-primary"
-                          onClick={() => setShowCreateForm(true)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Project
-                        </Button>
-                      </div>
                     </div>
                   ))
                 ) : showCreateForm ? (
@@ -401,6 +394,15 @@ export default function Dashboard() {
                 )}
 
               </CardContent>
+              <div className="text-center pb-6 text-muted-foreground">
+                <Button
+                  className="gradient-primary"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Project
+                </Button>
+              </div>
             </Card>
 
             {/* Quick Actions */}
@@ -454,19 +456,21 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {buddies.length > 0 ? (
-                  buddies.slice(0, 4).map((buddy: any, index) => (
+                  buddies.slice(0, 3).map((buddy: any, index) => (
                     <div key={buddy._id || index} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/20 transition-colors hover-lift">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={buddy.pic} />
                         <AvatarFallback>{buddy.name?.[0] || 'U'}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
+                      <Link to={`/buddy/${buddy._id}`} className="flex-1 min-w-0">
                         <p className="font-medium truncate">{buddy.name}</p>
                         <p className="text-sm text-muted-foreground truncate">{buddy.bio}</p>
-                      </div>
-                      <Button size="sm" variant="ghost">
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
+                      </Link>
+                      <Link to={`/buddy/${buddy._id}/chat`}>
+                        <Button size="sm" variant="ghost">
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      </Link>
                     </div>
                   ))
                 ) : (
@@ -483,38 +487,46 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Activity Feed */}
+            {/* Buddy Requests */}
             <Card className="glass-effect border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Recent Activity
+                  <Users className="h-5 w-5" />
+                  Buddy Requests
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-green-500 mt-2"></div>
-                    <div>
-                      <p className="font-medium">Project updated</p>
-                      <p className="text-muted-foreground">2 hours ago</p>
+                {buddyRequests.length > 0 ? (
+                  buddyRequests.map((buddy: any) => (
+                    <div 
+                      key={buddy._id} 
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/20 transition-colors hover-lift cursor-pointer"
+                    >
+                      <div 
+                        className="flex items-center gap-3 flex-1" 
+                        onClick={() => navigate(`/user/${buddy._id}`)}
+                      >
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={buddy.pic} />
+                          <AvatarFallback>{buddy.name?.[0] || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{buddy.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{buddy.bio}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="gradient-primary" onClick={() => handleAccept(buddy._id)}>Accept</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleReject(buddy._id)}>Reject</Button>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No pending buddy requests</p>
                   </div>
-                  <div className="flex items-start space-x-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
-                    <div>
-                      <p className="font-medium">New buddy connected</p>
-                      <p className="text-muted-foreground">1 day ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 mt-2"></div>
-                    <div>
-                      <p className="font-medium">Profile completed</p>
-                      <p className="text-muted-foreground">3 days ago</p>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
