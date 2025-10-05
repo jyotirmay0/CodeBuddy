@@ -5,6 +5,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import { AsyncHandler } from "../utils/AsyncHandler.js"
 import { saveOTP,deleteOTP,getOTP } from '../utils/otpRedis.js';
 import { sendMail } from '../utils/SendMail.js';
+import mongoose from "mongoose";
 
 const cookieOptions={
     httpOnly:true,
@@ -178,4 +179,49 @@ export const verifyOTP = AsyncHandler(async (req, res) => {
   .cookie("accessToken",accessToken,cookieOptions)
   .cookie("refreshToken",refreshToken,cookieOptions)
   .json(new ApiResponse(200, { accessToken, refreshToken }, "OTP verified and user verified successfully"));
+});
+
+export const getCollectionStats = AsyncHandler(async (req, res) => {
+  try {
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    
+    const collectionStats = await Promise.all(
+      collections.map(async (collection) => {
+        const collectionName = collection.name;
+        const count = await mongoose.connection.db.collection(collectionName).countDocuments();
+        
+        // Get sample document to infer field structure
+        const sampleDoc = await mongoose.connection.db.collection(collectionName).findOne();
+        const fields = sampleDoc ? Object.keys(sampleDoc).map(fieldName => {
+          const value = sampleDoc[fieldName];
+          let type = typeof value;
+          
+          // Handle special cases
+          if (value instanceof Date) type = "Date";
+          if (Array.isArray(value)) type = "Array";
+          if (fieldName === '_id') type = "ObjectId";
+          if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+            type = "Object";
+          }
+          
+          return {
+            name: fieldName,
+            type: type
+          };
+        }) : [];
+
+        return {
+          name: collectionName,
+          count: count,
+          fields: fields
+        };
+      })
+    );
+
+    return res.status(200).json(
+      new ApiResponse(200, collectionStats, "Collection statistics with field structure retrieved successfully")
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error retrieving collection statistics: " + error.message);
+  }
 });
