@@ -14,6 +14,7 @@ interface ApiCardProps {
   endpoint: ApiEndpoint;
   isLoggedIn: boolean;
   onAuthSuccess: () => void;
+  onLogout:()=>void;
 }
 
 const methodColors = {
@@ -24,7 +25,7 @@ const methodColors = {
   DELETE: "bg-secondary text-destructive",
 };
 
-export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess }: ApiCardProps) => {
+export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
@@ -105,12 +106,8 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess }: ApiCardProps) =
       });
 
       // Check if login or register was successful
-      if (
-        (endpoint.id === "auth-login" || endpoint.id === "auth-verify-otp") &&
-        res.status === 200
-      ) {
-        onAuthSuccess();
-      }
+      if ((endpoint.id === "auth-login" || endpoint.id === "auth-verify-otp") && res.status === 200)onAuthSuccess();
+      if(endpoint.id==="auth-logout" && res.status===200)onLogout();
     } catch (error: any) {
       const errorData = {
         status: error.response?.status || 500,

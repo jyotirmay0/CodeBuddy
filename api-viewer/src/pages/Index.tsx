@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { ApiCard } from "@/components/ApiCard";
 import { DatabaseViewer } from "@/components/DatabaseViewer";
 import { endpoints } from "@/data/endpoints";
+import { useAuth } from "@/contexts/Authcontext";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const {isLoggedIn, setIsLoggedIn} = useAuth();
 
   const categories = useMemo(() => {
     const cats = new Set(endpoints.map((e) => e.category));
@@ -119,6 +120,7 @@ const Index = () => {
                 endpoint={endpoint}
                 isLoggedIn={isLoggedIn}
                 onAuthSuccess={() => setIsLoggedIn(true)}
+                onLogout={()=>setIsLoggedIn(false)}
               />
             ))
           )}
