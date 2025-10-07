@@ -11,6 +11,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/auth/register",
     description: "Register a new user account",
     requiresAuth: false,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "username", type: "text", required: true, placeholder: "Enter username" },
       { name: "email", type: "email", required: true, placeholder: "Enter email" },
@@ -24,6 +27,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/auth/login",
     description: "Login to your account",
     requiresAuth: false,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "credential", type: "text", required: true, placeholder: "Username or email" },
       { name: "password", type: "password", required: true, placeholder: "Enter password" },
@@ -36,6 +42,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/auth/send-otp",
     description: "Send OTP to email for verification",
     requiresAuth: false,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "email", type: "email", required: true, placeholder: "Enter email" },
     ],
@@ -47,6 +56,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/auth/verify-otp",
     description: "Verify OTP and complete registration",
     requiresAuth: false,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "email", type: "email", required: true, placeholder: "Enter email" },
       { name: "otp", type: "text", required: true, placeholder: "Enter OTP code" },
@@ -59,6 +71,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/auth/logout",
     description: "Logout from your account",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "auth-refresh",
@@ -67,6 +82,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/auth/refresh-token",
     description: "Refresh access token",
     requiresAuth: false,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   
   // Project endpoints
@@ -77,6 +95,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project",
     description: "Create a new project",
     requiresAuth: true,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "name", type: "text", required: true, placeholder: "Project name" },
       { name: "description", type: "textarea", required: true, placeholder: "Project description" },
@@ -91,6 +112,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id/request",
     description: "Request to join a project",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
     ],
@@ -102,6 +126,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id/accept/:userId",
     description: "Accept join request (Owner only)",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
       { name: "userId", type: "text", required: true, placeholder: "User ID to accept" },
@@ -114,6 +141,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id/close",
     description: "Close project to new requests",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
     ],
@@ -125,6 +155,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/open",
     description: "Get all open projects matching your skills",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "project-get-mine",
@@ -133,14 +166,20 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/mine",
     description: "Get projects you own",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "project-get-joined",
     category: "project",
     method: "GET",
     url: "/project/joined",
-    description: "Get projects you've joined",
+    description: "Get projects you've joined(not own)",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "project-get-by-id",
@@ -149,6 +188,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id",
     description: "Get project details by ID",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
     ],
@@ -160,6 +202,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id",
     description: "Update project details",
     requiresAuth: true,
+    requiresBody: true,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
       { name: "name", type: "text", required: false, placeholder: "Project name" },
@@ -175,6 +220,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id",
     description: "Delete a project",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
     ],
@@ -186,6 +234,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id/reject/:userId",
     description: "Reject join request",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
       { name: "userId", type: "text", required: true, placeholder: "User ID to reject" },
@@ -198,6 +249,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id/remove/:userId",
     description: "Remove member from project",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
       { name: "userId", type: "text", required: true, placeholder: "User ID to remove" },
@@ -210,6 +264,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/project/:id/leave",
     description: "Leave a project",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "Project ID" },
     ],
@@ -219,10 +276,13 @@ export const endpoints: ApiEndpoint[] = [
   {
     id: "user-send-buddy-request",
     category: "user",
-    method: "POST",
+    method: "GET",
     url: "/user/send-request/:buddyId",
     description: "Send buddy request",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "buddyId", type: "text", required: true, placeholder: "Buddy User ID" },
     ],
@@ -234,6 +294,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/buddy-requests/:buddyId/accept",
     description: "Accept buddy request",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "buddyId", type: "text", required: true, placeholder: "Buddy User ID" },
     ],
@@ -245,6 +308,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/buddy-requests/:buddyId/reject",
     description: "Reject buddy request",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "buddyId", type: "text", required: true, placeholder: "Buddy User ID" },
     ],
@@ -256,6 +322,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/buddy-requests",
     description: "Get pending buddy requests",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-buddy-list",
@@ -264,6 +333,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/buddies",
     description: "Get your buddy list",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-buddy-suggestions",
@@ -272,6 +344,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/buddy-suggestions",
     description: "Get AI-powered buddy suggestions",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-buddy-details",
@@ -280,6 +355,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/buddy-details/:id",
     description: "Get buddy details by ID",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "id", type: "text", required: true, placeholder: "User ID" },
     ],
@@ -291,6 +369,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/upload-pic",
     description: "Upload profile picture",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: true,
     bodyFields: [
       { name: "image", type: "file", required: true, placeholder: "Select image" },
     ],
@@ -302,6 +383,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/update-contact",
     description: "Update contact information",
     requiresAuth: true,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "contact", type: "text", required: true, placeholder: "Contact number" },
     ],
@@ -313,6 +397,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/details",
     description: "Get your user details",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-update-password",
@@ -321,6 +408,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/update-password",
     description: "Update password",
     requiresAuth: true,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "oldPassword", type: "password", required: true, placeholder: "Current password" },
       { name: "newPassword", type: "password", required: true, placeholder: "New password" },
@@ -333,6 +423,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/update-details",
     description: "Update user profile details",
     requiresAuth: true,
+    requiresBody: true,
+    requiresParams: false,
+    requiresFiles: false,
     bodyFields: [
       { name: "name", type: "text", required: false, placeholder: "Full name" },
       { name: "dob", type: "text", required: false, placeholder: "Date of birth" },
@@ -350,6 +443,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/discover",
     description: "Discover new users",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-stats",
@@ -358,6 +454,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/stats",
     description: "Get dashboard statistics",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-send-message",
@@ -366,6 +465,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/send-message/:buddyId",
     description: "Send buddy request with message",
     requiresAuth: true,
+    requiresBody: true,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "buddyId", type: "text", required: true, placeholder: "Buddy User ID" },
       { name: "content", type: "textarea", required: true, placeholder: "Message content" },
@@ -378,6 +480,9 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/inbox",
     description: "Get all open chats",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: false,
+    requiresFiles: false,
   },
   {
     id: "user-dm-chat",
@@ -386,16 +491,11 @@ export const endpoints: ApiEndpoint[] = [
     url: "/user/chat/:buddyId",
     description: "Get DM chat with buddy",
     requiresAuth: true,
+    requiresBody: false,
+    requiresParams: true,
+    requiresFiles: false,
     bodyFields: [
       { name: "buddyId", type: "text", required: true, placeholder: "Buddy User ID" },
     ],
-  },
-  {
-    id: "database-stats",
-    category: "database",
-    method: "GET",
-    url: "/auth/db",
-    description: "Get live collection statistics",
-    requiresAuth: false,
   },
 ];

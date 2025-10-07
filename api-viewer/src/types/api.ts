@@ -7,6 +7,9 @@ export interface ApiEndpoint {
   url: string;
   description: string;
   requiresAuth: boolean;
+  requiresBody: boolean;
+  requiresParams: boolean;
+  requiresFiles: boolean;
   bodyFields?: BodyField[];
 }
 

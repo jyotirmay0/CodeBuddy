@@ -163,6 +163,8 @@ export const buddyRequests = AsyncHandler(async (req, res) => {
 
   if (!user) throw new ApiError(404, "User not found");
 
+  if(user.requests.length===0)return res.status(200).json(new ApiResponse(200, null, "U have no pending requests"));
+
   return res.status(200).json(
     new ApiResponse(200, { received: user.requests || [] }, "Received buddy requests fetched successfully")
   );
@@ -173,6 +175,8 @@ export const buddyList = AsyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("buddies");
 
   if (!user) throw new ApiError(404, "User not found");
+
+  if(user.buddies.length===0)return res.status(200).json(new ApiResponse(200, null, "No buddies in List"));
 
   return res.status(200).json(
     new ApiResponse(200, { buddies: user.buddies }, "Buddies fetched successfully")
@@ -368,7 +372,7 @@ export const sendBuddyRequestWithMessage = AsyncHandler(async (req, res) => {
   if (!sender || !receiver) throw new ApiError(404, "User not found");
 
   if (receiver.requests.includes(sender._id))
-    throw new ApiError(400, "Buddy request already sent");
+    throw new ApiError(400, "Buddy request already sent. Waiting for buddy to accept request.");
 
   receiver.requests.push(sender._id);
   await receiver.save({ validateBeforeSave: false });

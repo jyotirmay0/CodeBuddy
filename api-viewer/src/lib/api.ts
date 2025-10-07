@@ -20,6 +20,7 @@ export const makeApiCall = async (
     url,
     withCredentials: true,
   };
+  console.log(data)
 
   if (isFormData) {
     config.headers = {

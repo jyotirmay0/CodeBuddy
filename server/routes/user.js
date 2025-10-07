@@ -23,7 +23,7 @@ import upload from "../middleware/multer.js"
 
 export const router = Router();
 
-router.post("/send-request/:buddyId", verifyJWT, sendBuddyRequet);
+router.get("/send-request/:buddyId", verifyJWT, sendBuddyRequet);
 router.patch("/buddy-requests/:buddyId/accept", verifyJWT, acceptBuddyRequest);
 router.delete("/buddy-requests/:buddyId/reject", verifyJWT, rejectBuddyRequest);
 router.get("/buddy-requests", verifyJWT, buddyRequests);

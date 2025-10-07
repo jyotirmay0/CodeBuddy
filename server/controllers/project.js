@@ -38,9 +38,8 @@ export const requestToJoinProject = AsyncHandler(async (req, res) => {
   const project = await Project.findById(id);
   if (!project) throw new ApiError(404, "Project not found");
 
-  if (project.status === "closed")throw new ApiError(403, "Project is closed for new requests");
-
   if (project.members.includes(req.user._id))throw new ApiError(400, "You are already a member of this project");
+  if (project.status === "closed")throw new ApiError(403, "Project is closed for new requests");
 
   if (project.requests.includes(req.user._id))throw new ApiError(400, "You have already requested to join");
 

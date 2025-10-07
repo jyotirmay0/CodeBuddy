@@ -42,6 +42,9 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCar
     }
   };
 
+  const urlParts = endpoint.url.split("/").filter(Boolean);
+  const paramNames = urlParts.filter((part) => part.startsWith(":")).map((part) => part.substring(1));
+  
   const handleSubmit = async () => {
     if (endpoint.requiresAuth && !isLoggedIn) {
       toast.error("Authentication required", {
@@ -58,27 +61,35 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCar
       let processedData: any = {};
 
       // Handle URL parameters
-      Object.keys(formData).forEach((key) => {
-        if (processedUrl.includes(`:${key}`)) {
-          processedUrl = processedUrl.replace(`:${key}`, formData[key]);
-        } else {
-          processedData[key] = formData[key];
-        }
-      });
+      if (endpoint.requiresParams) {
+        paramNames.forEach((param) => {
+          if (formData[param]) {
+            processedUrl = processedUrl.replace(`:${param}`, formData[param]);
+          }
+        });
+      }
 
       // Handle array fields
-      endpoint.bodyFields?.forEach((field) => {
-        if (field.type === "array" && processedData[field.name]) {
-          processedData[field.name] = processedData[field.name]
-            .split(",")
-            .map((item: string) => item.trim())
-            .filter((item: string) => item.length > 0);
-        }
-      });
+      if (endpoint.requiresBody) {
+        endpoint.bodyFields?.forEach((field) => {
+          if (!paramNames.includes(field.name) && formData[field.name] !== undefined) {
+            processedData[field.name] = formData[field.name];
+          }
+        });
+
+        endpoint.bodyFields?.forEach((field) => {
+          if (field.type === "array" && processedData[field.name]) {
+            processedData[field.name] = processedData[field.name]
+              .split(",")
+              .map((item: string) => item.trim())
+              .filter((item: string) => item.length > 0);
+          }
+        });
+      }
 
       // Handle file upload
       let isFormDataRequest = false;
-      if (fileData) {
+      if (endpoint.requiresFiles && fileData) {
         const formDataObj = new FormData();
         formDataObj.append("image", fileData);
         Object.keys(processedData).forEach((key) => {
@@ -91,7 +102,7 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCar
       const res = await makeApiCall(
         endpoint.method,
         processedUrl,
-        Object.keys(processedData).length > 0 ? processedData : undefined,
+        isFormDataRequest || Object.keys(processedData).length > 0 ? processedData : undefined,
         isFormDataRequest
       );
 
@@ -124,6 +135,44 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCar
     }
   };
 
+  const renderUrlWithParams = () => {
+    if (!endpoint.requiresParams) {
+      return <code className="text-sm text-foreground font-mono tracking-tight">{endpoint.url}</code>;
+    }
+
+    const parts = endpoint.url.split("/").filter(Boolean);
+    return (
+      <div className="flex items-center gap-1 flex-wrap font-mono text-sm">
+        <span className="text-foreground">/</span>
+        {parts.map((part, idx) => {
+          if (part.startsWith(":")) {
+            const paramName = part.substring(1);
+            return (
+              <div>
+              <input
+                key={idx}
+                type="text"
+                placeholder={paramName}
+                value={formData[paramName] || ""}
+                onChange={(e) => handleInputChange(paramName, e.target.value)}
+                className="h-7 px-2 bg-muted/30 border border-border/50 rounded text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-foreground/30 font-mono text-sm min-w-[80px] max-w-[120px]"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {idx !== parts.length - 1 && <span className="text-muted-foreground">/</span>}
+              </div>
+            );
+          }
+          return (
+            <span key={idx} className="text-foreground">
+              {part}
+              {idx < parts.length - 1 && <span className="text-muted-foreground mx-1">/</span>}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-card border border-border/50 rounded overflow-hidden hover:border-border transition-all duration-200">
       <div
@@ -131,10 +180,10 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCar
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-4 flex-1">
-          <Badge className={cn("font-mono text-xs font-bold px-3 py-1", methodColors[endpoint.method])}>
+          <Badge className={cn("font-mono text-xs font-bold px-3 py-1 min-w-16 justify-center", methodColors[endpoint.method])}>
             {endpoint.method}
           </Badge>
-          <code className="text-sm text-foreground font-mono tracking-tight">{endpoint.url}</code>
+          {renderUrlWithParams()}
         </div>
         <div className="flex items-center gap-3">
           {endpoint.requiresAuth && (
@@ -157,37 +206,40 @@ export const ApiCard = ({ endpoint, isLoggedIn, onAuthSuccess,onLogout }: ApiCar
           {endpoint.bodyFields && endpoint.bodyFields.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">Request Body</h4>
-              {endpoint.bodyFields.map((field) => (
-                <div key={field.name} className="space-y-1">
-                  <label className="text-xs text-muted-foreground flex items-center gap-1">
-                    {field.name}
-                    {field.required && <span className="text-destructive">*</span>}
-                  </label>
-                  {field.type === "textarea" ? (
-                    <Textarea
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="bg-background"
-                    />
-                  ) : field.type === "file" ? (
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="bg-background"
-                    />
-                  ) : (
-                    <Input
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="bg-background"
-                    />
-                  )}
-                </div>
-              ))}
+              {endpoint.bodyFields
+                .filter((field) => !paramNames.includes(field.name))
+                .map((field) => (
+                  <div key={field.name} className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      {field.name}
+                      {field.required && <span className="text-destructive">*</span>}
+                    </label>
+                    {field.type === "textarea" ? (
+                      <Textarea
+                        placeholder={field.placeholder}
+                        value={formData[field.name] || ""}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                        className="bg-background"
+                      />
+                    ) : field.type === "file" ? (
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="bg-background"
+                        name="image"
+                      />
+                    ) : (
+                      <Input
+                        type={field.type}
+                        placeholder={field.placeholder}
+                        value={formData[field.name] || ""}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                        className="bg-background"
+                      />
+                    )}
+                  </div>
+                ))}
             </div>
           )}
 
